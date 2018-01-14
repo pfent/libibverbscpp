@@ -338,156 +338,6 @@ namespace ibv {
         };
     }
 
-    namespace queuepair {
-        enum class Type : std::underlying_type_t<ibv_qp_type> {
-            RC = 2,
-            UC,
-            UD,
-            RAW_PACKET = 8,
-            XRC_SEND = 9,
-            XRC_RECV
-        };
-
-        enum class InitAttrMask : std::underlying_type_t<ibv_qp_init_attr_mask> {
-            PD = 1 << 0,
-            XRCD = 1 << 1,
-            CREATE_FLAGS = 1 << 2,
-            RESERVED = 1 << 3
-        };
-
-        enum class CreateFlags : std::underlying_type_t<ibv_qp_create_flags> {
-            BLOCK_SELF_MCAST_LB = 1 << 1,
-            SCATTER_FCS = 1 << 8,
-        };
-
-        enum class OpenAttrMask : std::underlying_type_t<ibv_qp_open_attr_mask> {
-            NUM = 1 << 0,
-            XRCD = 1 << 1,
-            CONTEXT = 1 << 2,
-            TYPE = 1 << 3,
-            RESERVED = 1 << 4
-        };
-
-        enum class AttrMask : std::underlying_type_t<ibv_qp_attr_mask> {
-            STATE = 1 << 0,
-            CUR_STATE = 1 << 1,
-            EN_SQD_ASYNC_NOTIFY = 1 << 2,
-            ACCESS_FLAGS = 1 << 3,
-            PKEY_INDEX = 1 << 4,
-            PORT = 1 << 5,
-            QKEY = 1 << 6,
-            AV = 1 << 7,
-            PATH_MTU = 1 << 8,
-            TIMEOUT = 1 << 9,
-            RETRY_CNT = 1 << 10,
-            RNR_RETRY = 1 << 11,
-            RQ_PSN = 1 << 12,
-            MAX_QP_RD_ATOMIC = 1 << 13,
-            ALT_PATH = 1 << 14,
-            MIN_RNR_TIMER = 1 << 15,
-            SQ_PSN = 1 << 16,
-            MAX_DEST_RD_ATOMIC = 1 << 17,
-            PATH_MIG_STATE = 1 << 18,
-            CAP = 1 << 19,
-            DEST_QPN = 1 << 20
-        };
-
-        enum class State : std::underlying_type_t<ibv_qp_state> {
-            RESET,
-            INIT,
-            RTR,
-            RTS,
-            SQD,
-            SQE,
-            ERR,
-            UNKNOWN
-        };
-
-        enum class MigrationState : std::underlying_type_t<ibv_mig_state> {
-            MIGRATED,
-            REARM,
-            ARMED
-        };
-
-        struct OpenAttributes : private ibv_qp_open_attr {
-        };
-
-        struct Attributes : private ibv_qp_attr {
-            friend class QueuePair;
-        };
-
-        struct InitAttributes : private ibv_qp_init_attr {
-            friend class QueuePair;
-        };
-
-        struct QueuePair : private ibv_qp {
-            QueuePair(const QueuePair &) = delete;
-
-            ~QueuePair() {
-                const auto status = ::ibv_destroy_qp(this);
-                assert(status == 0); // TODO: throw
-            }
-
-            void modify(Attributes &attr, std::initializer_list<AttrMask> modifiedAttributes) {
-                int mask = 0;
-                for (auto mod : modifiedAttributes) {
-                    mask |= static_cast<ibv_qp_attr_mask>(mod);
-                }
-                const auto status = ibv_modify_qp(this, &attr, mask);
-                assert(status == 0); // TODO: throw
-            }
-
-            void query(Attributes &attr, std::initializer_list<AttrMask> queriedAttributes,
-                       InitAttributes &init_attr, std::initializer_list<InitAttrMask> queriedInitAttributes) {
-                int mask = 0;
-                for (auto query : queriedAttributes) {
-                    mask |= static_cast<ibv_qp_attr_mask>(query);
-                }
-                for (auto query : queriedInitAttributes) {
-                    mask |= static_cast<ibv_qp_init_attr_mask>(query);
-                }
-                const auto status = ibv_query_qp(this, &attr, mask, &init_attr);
-                assert(status == 0); // TODO: throw
-            }
-
-            void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr) {
-                const auto status = ibv_post_send(this, reinterpret_cast<ibv_send_wr *>(&wr),
-                                                  reinterpret_cast<ibv_send_wr **>(&bad_wr));
-                assert(status == 0); // TODO: throw
-            }
-
-            void postRecv(workrequest::Recv &wr, workrequest::Recv *&bad_wr) {
-                const auto status = ibv_post_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
-                                                  reinterpret_cast<ibv_recv_wr **>(&bad_wr));
-                assert(status == 0); // TODO: throw
-            }
-
-            std::unique_ptr<flow::Flow> createFlow(flow::Attributes &attr) {
-                auto res = ibv_create_flow(this, reinterpret_cast<ibv_flow_attr *>(&attr));
-                assert(res != nullptr); // TODO: throw
-                return std::unique_ptr<flow::Flow>(reinterpret_cast<flow::Flow *>(res));
-            }
-
-            /// @return the new rkey
-            int bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info) {
-                const auto status = ibv_bind_mw(this, reinterpret_cast<ibv_mw *>(&mw),
-                                                reinterpret_cast<ibv_mw_bind *>(&info));
-                assert(status == 0); // TODO: throw
-                return mw.getRkey();
-            }
-
-            void attachToMcastGroup(const Gid &gid, uint16_t lid) {
-                const auto status = ibv_attach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
-                assert(status == 0); // TODO: throw
-            }
-
-            void detachFromMcastGroup(const Gid &gid, uint16_t lid) {
-                const auto status = ibv_detach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
-                assert(status == 0); // TODO: throw
-            }
-        };
-    }
-
     namespace workcompletion {
         enum class Status : std::underlying_type_t<ibv_wc_status> {
             SUCCESS,
@@ -967,6 +817,187 @@ namespace ibv {
                                                  reinterpret_cast<ibv_pd *> (&newPd), newAddr, newLength, access);
                 assert(status == 0); // TODO: throw
                 return static_cast<ReregErrorCode>(status);
+            }
+        };
+    }
+
+    namespace queuepair {
+        enum class Type : std::underlying_type_t<ibv_qp_type> {
+            RC = 2,
+            UC,
+            UD,
+            RAW_PACKET = 8,
+            XRC_SEND = 9,
+            XRC_RECV
+        };
+
+        enum class InitAttrMask : std::underlying_type_t<ibv_qp_init_attr_mask> {
+            PD = 1 << 0,
+            XRCD = 1 << 1,
+            CREATE_FLAGS = 1 << 2,
+            RESERVED = 1 << 3
+        };
+
+        enum class CreateFlags : std::underlying_type_t<ibv_qp_create_flags> {
+            BLOCK_SELF_MCAST_LB = 1 << 1,
+            SCATTER_FCS = 1 << 8,
+        };
+
+        enum class OpenAttrMask : std::underlying_type_t<ibv_qp_open_attr_mask> {
+            NUM = 1 << 0,
+            XRCD = 1 << 1,
+            CONTEXT = 1 << 2,
+            TYPE = 1 << 3,
+            RESERVED = 1 << 4
+        };
+
+        enum class AttrMask : std::underlying_type_t<ibv_qp_attr_mask> {
+            STATE = 1 << 0,
+            CUR_STATE = 1 << 1,
+            EN_SQD_ASYNC_NOTIFY = 1 << 2,
+            ACCESS_FLAGS = 1 << 3,
+            PKEY_INDEX = 1 << 4,
+            PORT = 1 << 5,
+            QKEY = 1 << 6,
+            AV = 1 << 7,
+            PATH_MTU = 1 << 8,
+            TIMEOUT = 1 << 9,
+            RETRY_CNT = 1 << 10,
+            RNR_RETRY = 1 << 11,
+            RQ_PSN = 1 << 12,
+            MAX_QP_RD_ATOMIC = 1 << 13,
+            ALT_PATH = 1 << 14,
+            MIN_RNR_TIMER = 1 << 15,
+            SQ_PSN = 1 << 16,
+            MAX_DEST_RD_ATOMIC = 1 << 17,
+            PATH_MIG_STATE = 1 << 18,
+            CAP = 1 << 19,
+            DEST_QPN = 1 << 20
+        };
+
+        enum class State : std::underlying_type_t<ibv_qp_state> {
+            RESET,
+            INIT,
+            RTR,
+            RTS,
+            SQD,
+            SQE,
+            ERR,
+            UNKNOWN
+        };
+
+        enum class MigrationState : std::underlying_type_t<ibv_mig_state> {
+            MIGRATED,
+            REARM,
+            ARMED
+        };
+
+        struct Capabilities : public ibv_qp_cap {
+        };
+
+        struct OpenAttributes : private ibv_qp_open_attr {
+        };
+
+        struct Attributes : private ibv_qp_attr {
+            friend class QueuePair;
+        };
+
+        struct InitAttributes : private ibv_qp_init_attr {
+            friend class QueuePair;
+
+            void setContext(void *context) {
+                qp_context = context;
+            }
+
+            void setSendCompletionQueue(completions::CompletionQueue &cq) {
+                send_cq = reinterpret_cast<ibv_cq *>(&cq);
+            }
+
+            void setRecvCompletionQueue(completions::CompletionQueue &cq) {
+                recv_cq = reinterpret_cast<ibv_cq *>(&cq);
+            }
+
+            void setSharedReceiveQueue(srq::SharedReceiveQueue &sharedReceiveQueue) {
+                srq = reinterpret_cast<ibv_srq *>(&sharedReceiveQueue);
+            }
+
+            void setCapabilities(const Capabilities &caps) {
+                cap = caps;
+            }
+
+            void setType(Type type) {
+                qp_type = static_cast<ibv_qp_type>(type);
+            }
+
+            void setSignalAll(bool shouldSignal) {
+                sq_sig_all = shouldSignal;
+            }
+        };
+
+        struct QueuePair : private ibv_qp {
+            QueuePair(const QueuePair &) = delete;
+
+            ~QueuePair() {
+                const auto status = ::ibv_destroy_qp(this);
+                assert(status == 0); // TODO: throw
+            }
+
+            void modify(Attributes &attr, std::initializer_list<AttrMask> modifiedAttributes) {
+                int mask = 0;
+                for (auto mod : modifiedAttributes) {
+                    mask |= static_cast<ibv_qp_attr_mask>(mod);
+                }
+                const auto status = ibv_modify_qp(this, &attr, mask);
+                assert(status == 0); // TODO: throw
+            }
+
+            void query(Attributes &attr, std::initializer_list<AttrMask> queriedAttributes,
+                       InitAttributes &init_attr, std::initializer_list<InitAttrMask> queriedInitAttributes) {
+                int mask = 0;
+                for (auto query : queriedAttributes) {
+                    mask |= static_cast<ibv_qp_attr_mask>(query);
+                }
+                for (auto query : queriedInitAttributes) {
+                    mask |= static_cast<ibv_qp_init_attr_mask>(query);
+                }
+                const auto status = ibv_query_qp(this, &attr, mask, &init_attr);
+                assert(status == 0); // TODO: throw
+            }
+
+            void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr) {
+                const auto status = ibv_post_send(this, reinterpret_cast<ibv_send_wr *>(&wr),
+                                                  reinterpret_cast<ibv_send_wr **>(&bad_wr));
+                assert(status == 0); // TODO: throw
+            }
+
+            void postRecv(workrequest::Recv &wr, workrequest::Recv *&bad_wr) {
+                const auto status = ibv_post_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
+                                                  reinterpret_cast<ibv_recv_wr **>(&bad_wr));
+                assert(status == 0); // TODO: throw
+            }
+
+            std::unique_ptr<flow::Flow> createFlow(flow::Attributes &attr) {
+                auto res = ibv_create_flow(this, reinterpret_cast<ibv_flow_attr *>(&attr));
+                assert(res != nullptr); // TODO: throw
+                return std::unique_ptr<flow::Flow>(reinterpret_cast<flow::Flow *>(res));
+            }
+
+            /// @return the new rkey
+            int bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info) {
+                const auto status = ibv_bind_mw(this, reinterpret_cast<ibv_mw *>(&mw),
+                                                reinterpret_cast<ibv_mw_bind *>(&info));
+                assert(status == 0); // TODO: throw
+                return mw.getRkey();
+            }
+
+            void attachToMcastGroup(const Gid &gid, uint16_t lid) {
+                const auto status = ibv_attach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
+                assert(status == 0); // TODO: throw
+            }
+
+            void detachFromMcastGroup(const Gid &gid, uint16_t lid) {
+                const auto status = ibv_detach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
+                assert(status == 0); // TODO: throw
             }
         };
     }
