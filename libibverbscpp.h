@@ -8,7 +8,7 @@
 #include <cassert>
 #include <memory>
 
-namespace ibv { // TODO next: ibv_create_ah
+namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
 
     class Gid {
@@ -393,7 +393,6 @@ namespace ibv { // TODO next: ibv_create_ah
         };
 
         struct QueuePair : private ibv_qp {
-            // TODO
             QueuePair(const QueuePair &) = delete;
 
             ~QueuePair() {
@@ -447,6 +446,16 @@ namespace ibv { // TODO next: ibv_create_ah
                                                 reinterpret_cast<ibv_mw_bind *>(&info));
                 assert(status == 0); // TODO: throw
                 return mw.getRkey();
+            }
+
+            void attachToMcastGroup(const Gid &gid, uint16_t lid) {
+                const auto status = ibv_attach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
+                assert(status == 0); // TODO: throw
+            }
+
+            void detachFromMcastGroup(const Gid &gid, uint16_t lid) {
+                const auto status = ibv_detach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
+                assert(status == 0); // TODO: throw
             }
         };
     }
@@ -592,6 +601,20 @@ namespace ibv { // TODO next: ibv_create_ah
 
             void ack() {
                 ibv_ack_async_event(this);
+            }
+        };
+    }
+
+    namespace ah {
+        struct Attributes : private ibv_ah_attr {
+        };
+
+        struct AddressHandle : private ibv_ah {
+            AddressHandle(const AddressHandle &) = delete;
+
+            ~AddressHandle() {
+                const auto status = ibv_destroy_ah(this);
+                assert(status == 0); // TODO: log error
             }
         };
     }
@@ -981,15 +1004,31 @@ namespace ibv { // TODO next: ibv_create_ah
             std::unique_ptr<srq::SharedReceiveQueue> createSrq(srq::InitAttributes &initAttributes) {
                 using SRQ = srq::SharedReceiveQueue;
                 const auto srq = ibv_create_srq(this, reinterpret_cast<ibv_srq_init_attr *>(&initAttributes));
-                assert(srq != nullptr);
+                assert(srq != nullptr); // TODO: throw
                 return std::unique_ptr<SRQ>(reinterpret_cast<SRQ *>(srq));
             }
 
             std::unique_ptr<queuepair::QueuePair> createQueuePair(queuepair::InitAttributes &initAttributes) {
                 using QP = queuepair::QueuePair;
                 const auto qp = ibv_create_qp(this, reinterpret_cast<ibv_qp_init_attr *>(&initAttributes));
-                assert(qp != nullptr);
+                assert(qp != nullptr); // TODO: throw
                 return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
+            }
+
+            std::unique_ptr<ah::AddressHandle> createAddressHandle(ah::Attributes attributes) {
+                using AH = ah::AddressHandle;
+                const auto ah = ibv_create_ah(this, reinterpret_cast<ibv_ah_attr *>(&attributes));
+                assert(ah != nullptr);  // TODO: throw
+                return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
+            }
+
+            std::unique_ptr<ah::AddressHandle>
+            createAddressHandleFromWorkCompletion(workcompletion::WorkCompletion &wc, ibv_grh *grh /*TODO*/,
+                                                  uint8_t port_num) {
+                using AH = ah::AddressHandle;
+                const auto ah = ibv_create_ah_from_wc(this, reinterpret_cast<ibv_wc *>(&wc), grh, port_num);
+                assert(ah != nullptr);  // TODO: throw
+                return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
             }
         };
     }
@@ -1016,6 +1055,8 @@ namespace ibv { // TODO next: ibv_create_ah
 
     namespace context {
         struct Context : private ibv_context {
+            Context(const Context &) = delete;
+
             ~Context() {
                 const auto status = ::ibv_close_device(this);
                 assert(status == 0); // TODO: throw
@@ -1097,6 +1138,15 @@ namespace ibv { // TODO next: ibv_create_ah
                 assert(qp != nullptr); // TODO: throw
                 return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
             }
+
+            ah::Attributes initAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
+                                                              ibv_grh *grh /*TODO*/) {
+                ah::Attributes attributes;
+                const auto status = ibv_init_ah_from_wc(this, port_num, reinterpret_cast<ibv_wc *>(&wc), grh,
+                                                        reinterpret_cast<ibv_ah_attr *>(&attributes));
+                assert(status == 0); // TODO: throw
+                return attributes;
+            }
         };
     }
 
@@ -1104,6 +1154,10 @@ namespace ibv { // TODO next: ibv_create_ah
         return ibv_inc_rkey(rkey);
     }
 
+    void forkInit() {
+        const auto status = ibv_fork_init();
+        assert(status == 0); // TODO: throw
+    }
 }
 
 #endif
