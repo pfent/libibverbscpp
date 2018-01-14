@@ -45,7 +45,6 @@ namespace ibv { // TODO next: ibv_comp_channel
         };
 
         struct SendWr : private ibv_send_wr {
-
             void setId(uint64_t id) {
                 wr_id = id;
             }
@@ -63,12 +62,6 @@ namespace ibv { // TODO next: ibv_comp_channel
                 this->num_sge = num_sge;
             }
 
-        protected:
-            void setOpcode(Opcode opcode) {
-                this->opcode = static_cast<ibv_wr_opcode>(opcode);
-            }
-
-        public:
             void setFlags(std::initializer_list<Flags> flags) { // TODO: utility functions with bools
                 send_flags = 0;
                 for (const auto flag : flags) {
@@ -77,6 +70,10 @@ namespace ibv { // TODO next: ibv_comp_channel
             }
 
         protected:
+            void setOpcode(Opcode opcode) {
+                this->opcode = static_cast<ibv_wr_opcode>(opcode);
+            }
+
             void setImmData(uint32_t data) {
                 imm_data = data;
             }
@@ -95,14 +92,12 @@ namespace ibv { // TODO next: ibv_comp_channel
         };
 
         struct Write : Rdma {
-        public:
             Write() : Rdma{} {
                 SendWr::setOpcode(Opcode::RDMA_WRITE);
             }
         };
 
         struct WriteWithImm : Write {
-        public:
             WriteWithImm() : Write{} {
                 WriteWithImm::setOpcode(Opcode::RDMA_WRITE_WITH_IMM);
             }
@@ -111,14 +106,12 @@ namespace ibv { // TODO next: ibv_comp_channel
         };
 
         struct Send : SendWr {
-        public:
             Send() : SendWr{} {
                 SendWr::setOpcode(Opcode::SEND);
             }
         };
 
         struct SendWithImm : SendWr {
-        public:
             SendWithImm() : SendWr{} {
                 SendWr::setOpcode(Opcode::SEND_WITH_IMM);
             }
@@ -242,19 +235,15 @@ namespace ibv { // TODO next: ibv_comp_channel
         };
 
         struct EthFilter : private ibv_flow_eth_filter {
-
         };
 
         struct IPv4Filter : private ibv_flow_ipv4_filter {
-
         };
 
         struct TcpUdpFilter : private ibv_flow_tcp_udp_filter {
-
         };
 
         struct Attributes : private ibv_flow_attr {
-
         };
 
         struct Flow : private ibv_flow {
@@ -440,8 +429,7 @@ namespace ibv { // TODO next: ibv_comp_channel
             WITH_INV = 1 << 3
         };
 
-        class WorkCompletion : private ibv_wc {
-        public:
+        struct WorkCompletion : private ibv_wc {
             uint64_t getId() const {
                 return wr_id;
             }
@@ -577,6 +565,57 @@ namespace ibv { // TODO next: ibv_comp_channel
         class ProtectionDomain;
     }
 
+    namespace completions {
+        struct CompletionEventChannel : private ibv_comp_channel {
+            CompletionEventChannel(const CompletionEventChannel &) = delete;
+
+            ~CompletionEventChannel() {
+                const auto status = ibv_destroy_comp_channel(this);
+                assert(status == 0); // TODO: report error
+            }
+
+            std::tuple<ibv_cq *, void *> getEvent() {
+                ibv_cq *cqRet;
+                void *contextRet;
+                const auto status = ibv_get_cq_event(this, &cqRet, &contextRet);
+                assert(status == 0);
+                return {cqRet, contextRet};
+            };
+        };
+
+        struct CompletionQueue : private ibv_cq {
+            CompletionQueue(const CompletionQueue &) = delete;
+
+            ~CompletionQueue() {
+                const auto status = ibv_destroy_cq(this);
+                assert(status == 0); // TODO: report error
+            }
+
+            void resize(int newCqe) {
+                const auto status = ibv_resize_cq(this, newCqe);
+                assert(status == 0); // TODO: throw
+            }
+
+            void ackEvents(unsigned int nEvents) {
+                ibv_ack_cq_events(this, nEvents);
+            }
+
+            int poll(int numEntries, workcompletion::WorkCompletion *resultArray) {
+                const auto res = ibv_poll_cq(this, numEntries, reinterpret_cast<ibv_wc *>(resultArray));
+                assert(res >= 0); // TODO: throw
+                return res;
+            }
+
+            void requestNotify(bool solicitedOnly) {
+                const auto status = ibv_req_notify_cq(this, solicitedOnly);
+                assert(status == 0); // TODO: throw
+            }
+        };
+
+        struct PollAttributes : private ibv_poll_cq_attr {
+        };
+    }
+
     namespace port {
         enum class State : std::underlying_type_t<ibv_port_state> {
             NOP = 0,
@@ -613,7 +652,7 @@ namespace ibv { // TODO next: ibv_comp_channel
             IP_BASED_GIDS = 1 << 26
         };
 
-        struct Attributes : ibv_port_attr {
+        struct Attributes : private ibv_port_attr {
             bool hasCapability(CapabilityFlag flag) {
                 const auto rawFlag = static_cast<ibv_port_cap_flags>(flag);
                 return (port_cap_flags & rawFlag) == rawFlag;
@@ -649,7 +688,7 @@ namespace ibv { // TODO next: ibv_comp_channel
             MANAGED_FLOW_STEERING = 1 << 29
         };
 
-        struct Attributes : ibv_device_attr {
+        struct Attributes : private ibv_device_attr {
             bool hasCapability(CapabilityFlag flag) {
                 const auto rawFlag = static_cast<ibv_device_cap_flags>(flag);
                 return (device_cap_flags & rawFlag) == rawFlag;
@@ -864,7 +903,6 @@ namespace ibv { // TODO next: ibv_comp_channel
         };
 
         struct InitAttributes : private ibv_xrcd_init_attr {
-
         };
 
         struct ExtendedConnectionDomain : private ibv_xrcd {
@@ -879,7 +917,6 @@ namespace ibv { // TODO next: ibv_comp_channel
 
     namespace context {
         struct Context : private ibv_context {
-
             ~Context() {
                 const auto status = ::ibv_close_device(this);
                 assert(status == 0); // TODO: throw
@@ -924,23 +961,35 @@ namespace ibv { // TODO next: ibv_comp_channel
             }
 
             std::unique_ptr<protectiondomain::ProtectionDomain> allocProtectionDomain() {
+                using PD = protectiondomain::ProtectionDomain;
                 const auto pd = ibv_alloc_pd(this);
-                assert(pd); // TODO: throw
-                return std::unique_ptr<protectiondomain::ProtectionDomain>(
-                        reinterpret_cast<protectiondomain::ProtectionDomain *>(pd));
+                assert(pd != nullptr); // TODO: throw
+                return std::unique_ptr<PD>(reinterpret_cast<PD *>(pd));
             }
 
             std::unique_ptr<xrcd::ExtendedConnectionDomain> openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
+                using XRCD = xrcd::ExtendedConnectionDomain;
                 const auto xrcd = ibv_open_xrcd(this, reinterpret_cast<ibv_xrcd_init_attr *>(&attr));
-                assert(xrcd); // TODO: throw
-                return std::unique_ptr<xrcd::ExtendedConnectionDomain>(
-                        reinterpret_cast<xrcd::ExtendedConnectionDomain *>(xrcd));
+                assert(xrcd != nullptr); // TODO: throw
+                return std::unique_ptr<XRCD>(reinterpret_cast<XRCD *>(xrcd));
             }
 
-            void createCompletionEventChannel() {
-                const auto compChannel = ibv_create_comp_channel(this);
-                assert(compChannel != nullptr);
-                //return compChannel;
+            std::unique_ptr<completions::CompletionEventChannel> createCompletionEventChannel() {
+                using CEC = completions::CompletionEventChannel;
+                const auto compChannel = reinterpret_cast<CEC *>(ibv_create_comp_channel(this));
+                assert(compChannel != nullptr); // TODO: throw
+                return std::unique_ptr<CEC>(compChannel);
+            }
+
+            std::unique_ptr<completions::CompletionQueue>
+            createCompletionQueue(int cqe, void *context, completions::CompletionEventChannel &cec,
+                                  int completionVector) {
+                using CQ = completions::CompletionQueue;
+                const auto cq = reinterpret_cast<CQ *>(ibv_create_cq(
+                        this, cqe, context, reinterpret_cast<ibv_comp_channel *>(&cec), completionVector
+                ));
+                assert(cq != nullptr);
+                return std::unique_ptr<CQ>(cq);
             }
         };
     }
@@ -948,6 +997,7 @@ namespace ibv { // TODO next: ibv_comp_channel
     uint32_t incRkey(uint32_t rkey) {
         return ibv_inc_rkey(rkey);
     }
+
 }
 
 #endif
