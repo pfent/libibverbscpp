@@ -8,7 +8,19 @@
 #include <cassert>
 #include <memory>
 
-namespace ibv {
+namespace ibv { // TODO next: ibv_comp_channel
+    class Gid {
+        ibv_gid underlying;
+    public:
+        uint64_t getSubnetPrefix() const {
+            return underlying.global.subnet_prefix;
+        }
+
+        uint64_t getInterfaceId() const {
+            return underlying.global.interface_id;
+        }
+    };
+
     namespace workrequest {
         // internal
         enum class Opcode : std::underlying_type_t<ibv_wr_opcode> {
@@ -32,9 +44,8 @@ namespace ibv {
             IP_CSUM = 1 << 4
         };
 
-        // internal
         struct SendWr : private ibv_send_wr {
-        public:
+
             void setId(uint64_t id) {
                 wr_id = id;
             }
@@ -47,7 +58,6 @@ namespace ibv {
                 next = wrList;
             }
 
-        public:
             void setSge(ibv_sge *sg_list, int num_sge) { // TODO: setLocalAddress instead of SGE
                 this->sg_list = sg_list;
                 this->num_sge = num_sge;
@@ -159,7 +169,7 @@ namespace ibv {
             }
 
             void setAddValue(uint64_t value) {
-                getWr().atomic.compare_add;
+                getWr().atomic.compare_add = value;
             }
         };
 
@@ -200,6 +210,67 @@ namespace ibv {
                 sge.lkey = lkey;
             }
         };
+    }
+
+    namespace flow {
+        enum class Flags : std::underlying_type_t<ibv_flow_flags> {
+            ALLOW_LOOP_BACK = 1 << 0,
+            DONT_TRAP = 1 << 1,
+        };
+
+        enum class AttributeType : std::underlying_type_t<ibv_flow_attr_type> {
+            ORMAL = 0x0,
+            LL_DEFAULT = 0x1,
+            C_DEFAULT = 0x2,
+        };
+
+        enum class SpecType : std::underlying_type_t<ibv_flow_spec_type> {
+            ETH = 0x20,
+            IPV4 = 0x30,
+            TCP = 0x40,
+            UDP = 0x41,
+        };
+
+        struct Spec : private ibv_flow_spec {
+            SpecType getType() const {
+                return static_cast<SpecType>(hdr.type);
+            }
+
+            uint16_t getSize() const {
+                return hdr.size;
+            }
+        };
+
+        struct EthFilter : private ibv_flow_eth_filter {
+
+        };
+
+        struct IPv4Filter : private ibv_flow_ipv4_filter {
+
+        };
+
+        struct TcpUdpFilter : private ibv_flow_tcp_udp_filter {
+
+        };
+
+        struct Attributes : private ibv_flow_attr {
+
+        };
+
+        struct Flow : private ibv_flow {
+            Flow(const Flow &) = delete; // Can't be constructed
+
+            ~Flow() {
+                const auto res = ibv_destroy_flow(this);
+                assert(res == 0); // TODO: report error
+            }
+        };
+    }
+
+    namespace memorywindow {
+        class Bind;
+
+        class MemoryWindow;
     }
 
     namespace queuepair {
@@ -273,32 +344,53 @@ namespace ibv {
             ARMED
         };
 
-        class QueuePair : ibv_qp {
+        struct Attributes : private ibv_qp_attr {
+            friend class QueuePair;
+        };
+
+        struct InitAttributes : private ibv_qp_init_attr {
+            friend class QueuePair;
+        };
+
+        struct QueuePair : private ibv_qp {
             // TODO
+            QueuePair(const QueuePair &) = delete;
 
             ~QueuePair() {
                 const auto status = ::ibv_destroy_qp(this);
                 assert(status == 0); // TODO: throw
             }
 
-            int modify(ibv_qp_attr *attr, int attr_mask) {
-                return ibv_modify_qp(this, attr, attr_mask);
+            int modify(Attributes &attr, int attr_mask) {
+                return ibv_modify_qp(this, &attr, attr_mask);
             }
 
-            int query(ibv_qp_attr *attr, int attr_mask, ibv_qp_init_attr *init_attr) {
-                return ibv_query_qp(this, attr, attr_mask, init_attr);
+            int query(Attributes &attr, int attr_mask, InitAttributes &init_attr) {
+                return ibv_query_qp(this, &attr, attr_mask, &init_attr);
             }
 
-            int PostSend(ibv_send_wr *wr, ibv_send_wr **bad_wr) {
-                return ibv_post_send(this, wr, bad_wr);
+            int postSend(workrequest::SendWr &wr, ibv_send_wr *&bad_wr) {
+                return ibv_post_send(this, reinterpret_cast<ibv_send_wr *>(&wr), &bad_wr);
             }
 
-            int postRecv(ibv_recv_wr *wr, ibv_recv_wr **bad_wr) {
-                return ibv_post_recv(this, wr, bad_wr);
+            int postRecv(workrequest::Recv &wr, ibv_recv_wr *&bad_wr) {
+                return ibv_post_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr), &bad_wr);
             }
 
             int bindMw(ibv_mw *mw, ibv_mw_bind *mw_bind) {
                 return ibv_bind_mw(this, mw, mw_bind);
+            }
+
+            std::unique_ptr<flow::Flow> createFlow(flow::Attributes &attr) {
+                auto res = ibv_create_flow(this, reinterpret_cast<ibv_flow_attr *>(&attr));
+                assert(res != nullptr); // TODO: throw
+                return std::unique_ptr<flow::Flow>(reinterpret_cast<flow::Flow *>(res));
+            }
+
+            void bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info) {
+                const auto status = ibv_bind_mw(this, reinterpret_cast<ibv_mw *>(&mw),
+                                                reinterpret_cast<ibv_mw_bind *>(&info));
+                assert(status == 0); // TODO: throw
             }
         };
     }
@@ -415,6 +507,40 @@ namespace ibv {
         };
     }
 
+    namespace event {
+        enum class Type : std::underlying_type_t<ibv_event_type> {
+            CQ_ERR,
+            QP_FATAL,
+            QP_REQ_ERR,
+            QP_ACCESS_ERR,
+            COMM_EST,
+            SQ_DRAINED,
+            PATH_MIG,
+            PATH_MIG_ERR,
+            DEVICE_FATAL,
+            PORT_ACTIVE,
+            PORT_ERR,
+            LID_CHANGE,
+            PKEY_CHANGE,
+            SM_CHANGE,
+            SRQ_ERR,
+            SRQ_LIMIT_REACHED,
+            QP_LAST_WQE_REACHED,
+            CLIENT_REREGISTER,
+            GID_CHANGE
+        };
+
+        struct AsyncEvent : private ibv_async_event {
+            Type getType() const {
+                return static_cast<Type>(event_type);
+            }
+
+            void ack() {
+                ibv_ack_async_event(this);
+            }
+        };
+    }
+
     enum class NodeType : std::underlying_type_t<ibv_node_type> {
         UNKNOWN = -1,
         CA = 1,
@@ -433,8 +559,22 @@ namespace ibv {
         USNIC_UDP,
     };
 
+    enum class AccessFlag : std::underlying_type_t<ibv_access_flags> {
+        LOCAL_WRITE = 1,
+        REMOTE_WRITE = (1 << 1),
+        REMOTE_READ = (1 << 2),
+        REMOTE_ATOMIC = (1 << 3),
+        MW_BIND = (1 << 4),
+        ZERO_BASED = (1 << 5),
+        ON_DEMAND = (1 << 6),
+    };
+
     namespace context {
         class Context;
+    }
+
+    namespace protectiondomain {
+        class ProtectionDomain;
     }
 
     namespace port {
@@ -516,28 +656,15 @@ namespace ibv {
             }
         };
 
-        class Device : private ibv_device {
-        public:
-            Device() = delete;
-
+        struct Device : private ibv_device {
             Device(const Device &) = delete;
 
-            Device &operator=(Device &) = delete;
-
-            std::string_view getName() const {
-                return std::string_view(name);
+            std::string_view getName() {
+                return std::string_view(ibv_get_device_name(this));
             }
 
-            std::string_view getDevName() const {
-                return std::string_view(dev_name);
-            }
-
-            std::string_view getDevPath() const {
-                return std::string_view(dev_path);
-            }
-
-            std::string_view getIbdevPath() const {
-                return std::string_view(ibdev_path);
+            uint64_t getGUID() {
+                return ibv_get_device_guid(this);
             }
 
             context::Context *open() {
@@ -575,67 +702,6 @@ namespace ibv {
         };
     }
 
-    namespace context {
-        class Context : private ibv_context {
-        public:
-            ~Context() {
-                const auto status = ::ibv_close_device(this);
-                assert(status == 0); // TODO: throw
-            }
-
-            device::Device *getDevice() const {
-                return reinterpret_cast<device::Device *>(device);
-            }
-
-            device::Attributes getAttributes() {
-                device::Attributes result;
-                const auto status = ibv_query_device(this, &result);
-                assert(status == 0); // TODO: throw
-                return result;
-            }
-
-            port::Attributes queryPort(uint8_t port) {
-                port::Attributes res;
-                const auto status = ibv_query_port(this, port, &res);
-                assert(status == 0); // TODO: throw
-                return res;
-            }
-        };
-    }
-
-    namespace protectiondomain {
-
-        class ProtectionDomain : private ibv_pd {
-            friend std::unique_ptr<ProtectionDomain> make_ProtectionDomain(context::Context *);
-
-        public:
-            ProtectionDomain() = delete;
-
-            ProtectionDomain(const ProtectionDomain &) = delete;
-
-            ProtectionDomain &operator=(ProtectionDomain &) = delete;
-
-            ~ProtectionDomain() {
-                const auto status = ibv_dealloc_pd(this);
-                assert(status != 0);
-            }
-
-            context::Context *getContext() const {
-                return reinterpret_cast<context::Context *>(context);
-            }
-
-            uint32_t getHandle() const {
-                return handle;
-            }
-        };
-
-        std::unique_ptr<ProtectionDomain> make_ProtectionDomain(context::Context *context) {
-            const auto pd = ibv_alloc_pd(reinterpret_cast<ibv_context *>(context));
-            assert(pd); // TODO: throw error
-            return std::unique_ptr<ProtectionDomain>(static_cast<ProtectionDomain *>(pd));
-        }
-    }
-
     namespace memorywindow {
         enum class Type : std::underlying_type_t<ibv_mw_type> {
             TYPE_1 = 1,
@@ -646,15 +712,12 @@ namespace ibv {
             // TODO
         };
 
-        class MemoryWindow : private ibv_mw {
-            friend std::unique_ptr<MemoryWindow> make_MemoryWindow(protectiondomain::ProtectionDomain *, Type);
+        class Bind : ibv_mw_bind {
+            // TODO:
+        };
 
-        public:
-            MemoryWindow() = delete;
-
-            MemoryWindow(const MemoryWindow &) = delete;
-
-            MemoryWindow &operator=(MemoryWindow &) = delete;
+        struct MemoryWindow : private ibv_mw {
+            MemoryWindow(const MemoryWindow &) = delete; // Can't be constructed
 
             ~MemoryWindow() {
                 const auto status = ibv_dealloc_mw(this);
@@ -681,40 +744,27 @@ namespace ibv {
                 return static_cast<Type>(type);
             }
         };
-
-        std::unique_ptr<MemoryWindow> make_MemoryWindow(protectiondomain::ProtectionDomain *pd, Type type) {
-            const auto mw = ibv_alloc_mw(reinterpret_cast<ibv_pd *>(pd), static_cast<ibv_mw_type>(type));
-            assert(mw); // TODO: throw error
-            return std::unique_ptr<MemoryWindow>(static_cast<MemoryWindow *>(mw));
-        }
     }
 
     namespace memoryregion {
-        enum class AccessFlags : std::underlying_type_t<ibv_access_flags> {
-            LOCAL_WRITE = 1,
-            REMOTE_WRITE = (1 << 1),
-            REMOTE_READ = (1 << 2),
-            REMOTE_ATOMIC = (1 << 3),
-            MW_BIND = (1 << 4),
-            ZERO_BASED = (1 << 5),
-            ON_DEMAND = (1 << 6),
-        };
-
-        enum class ReregFlags : std::underlying_type_t<ibv_rereg_mr_flags> {
+        enum class ReregFlag : std::underlying_type_t<ibv_rereg_mr_flags> {
             CHANGE_TRANSLATION = (1 << 0),
             CHANGE_PD = (1 << 1),
             CHANGE_ACCESS = (1 << 2),
             KEEP_VALID = (1 << 3),
-            FLAGS_SUPPORTED = ((IBV_REREG_MR_KEEP_VALID << 1) - 1)
+            FLAGS_SUPPORTED = ((KEEP_VALID << 1) - 1)
         };
 
-        class MemoryRegion : private ibv_mr {
-        public:
-            MemoryRegion() = delete;
+        enum class ReregErrorCode : std::underlying_type_t<ibv_rereg_mr_err_code> {
+            INPUT = -1,
+            DONT_FORK_NEW = -2,
+            DO_FORK_OLD = -3,
+            CMD = -4,
+            CMD_AND_DO_FORK_NEW = -5,
+        };
 
+        struct MemoryRegion : private ibv_mr {
             MemoryRegion(const MemoryRegion &) = delete;
-
-            MemoryRegion &operator=(MemoryRegion &) = delete;
 
             ~MemoryRegion() {
                 const auto status = ibv_dereg_mr(this);
@@ -748,7 +798,155 @@ namespace ibv {
             uint32_t getRkey() const {
                 return rkey;
             };
+
+            ReregErrorCode
+            reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain &newPd,
+                       void *newAddr,
+                       size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
+                int changes = 0;
+                for (auto change : changeFlags) {
+                    changes |= static_cast<ibv_rereg_mr_flags>(change);
+                }
+                int access = 0;
+                for (auto accessFlag : accessFlags) {
+                    access |= static_cast<ibv_access_flags>(accessFlag);
+                }
+                const auto status = ibv_rereg_mr(this, changes,
+                                                 reinterpret_cast<ibv_pd *> (&newPd), newAddr, newLength, access);
+                assert(status == 0); // TODO: throw
+                return static_cast<ReregErrorCode>(status);
+            }
         };
+    }
+
+    namespace protectiondomain {
+        struct ProtectionDomain : private ibv_pd {
+            ProtectionDomain(const ProtectionDomain &) = delete;
+
+            ~ProtectionDomain() {
+                const auto status = ibv_dealloc_pd(this);
+                assert(status != 0); // TODO: report error
+            }
+
+            context::Context *getContext() const {
+                return reinterpret_cast<context::Context *>(context);
+            }
+
+            uint32_t getHandle() const {
+                return handle;
+            }
+
+            std::unique_ptr<memoryregion::MemoryRegion>
+            registerMemoryRegion(void *addr, size_t length, std::initializer_list<AccessFlag> flags) {
+                int access = 0;
+                for (auto flag : flags) {
+                    access |= static_cast<ibv_access_flags>(flag);
+                }
+                auto mr = ibv_reg_mr(this, addr, length, access);
+                assert(mr != nullptr); // TODO: throw
+                return std::unique_ptr<memoryregion::MemoryRegion>(reinterpret_cast<memoryregion::MemoryRegion *>(mr));
+            }
+
+            std::unique_ptr<memorywindow::MemoryWindow>
+            allocMemoryWindow(memorywindow::Type type) {
+                const auto mw = ibv_alloc_mw(this, static_cast<ibv_mw_type>(type));
+                assert(mw); // TODO: throw
+                return std::unique_ptr<memorywindow::MemoryWindow>(reinterpret_cast<memorywindow::MemoryWindow *>(mw));
+            }
+        };
+    }
+
+    namespace xrcd {
+        enum class InitAttributesMask : std::underlying_type_t<ibv_xrcd_init_attr_mask> {
+            FD = 1 << 0,
+            OFLAGS = 1 << 1,
+            RESERVED = 1 << 2
+        };
+
+        struct InitAttributes : private ibv_xrcd_init_attr {
+
+        };
+
+        struct ExtendedConnectionDomain : private ibv_xrcd {
+            ExtendedConnectionDomain(const ExtendedConnectionDomain &) = delete;
+
+            ~ExtendedConnectionDomain() {
+                const auto status = ibv_close_xrcd(this);
+                assert(status == 0);
+            }
+        };
+    }
+
+    namespace context {
+        struct Context : private ibv_context {
+
+            ~Context() {
+                const auto status = ::ibv_close_device(this);
+                assert(status == 0); // TODO: throw
+            }
+
+            device::Device *getDevice() const {
+                return reinterpret_cast<device::Device *>(device);
+            }
+
+            device::Attributes queryAttributes() {
+                device::Attributes result;
+                const auto status = ibv_query_device(this, &result);
+                assert(status == 0); // TODO: throw
+                return result;
+            }
+
+            port::Attributes queryPort(uint8_t port) {
+                port::Attributes res;
+                const auto status = ibv_query_port(this, port, &res);
+                assert(status == 0); // TODO: throw
+                return res;
+            }
+
+            event::AsyncEvent getAsyncEvent() {
+                event::AsyncEvent res{};
+                const auto status = ibv_get_async_event(this, reinterpret_cast<ibv_async_event *>(&res));
+                assert(status == 0); // TODO: throw
+                return res;
+            }
+
+            Gid queryGid(uint8_t port_num, int index) {
+                Gid res{};
+                const auto status = ibv_query_gid(this, port_num, index, reinterpret_cast<ibv_gid *>(&res));
+                assert(status == 0); // TODO: throw
+            }
+
+            uint16_t queryPkey(uint8_t port_num, int index) {
+                uint16_t res{};
+                const auto status = ibv_query_pkey(this, port_num, index, &res);
+                assert(status == 0); // TODO: throw
+                return res;
+            }
+
+            std::unique_ptr<protectiondomain::ProtectionDomain> allocProtectionDomain() {
+                const auto pd = ibv_alloc_pd(this);
+                assert(pd); // TODO: throw
+                return std::unique_ptr<protectiondomain::ProtectionDomain>(
+                        reinterpret_cast<protectiondomain::ProtectionDomain *>(pd));
+            }
+
+            std::unique_ptr<xrcd::ExtendedConnectionDomain> openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
+                const auto xrcd = ibv_open_xrcd(this, reinterpret_cast<ibv_xrcd_init_attr *>(&attr));
+                assert(xrcd); // TODO: throw
+                return std::unique_ptr<xrcd::ExtendedConnectionDomain>(
+                        reinterpret_cast<xrcd::ExtendedConnectionDomain *>(xrcd));
+            }
+
+            void createCompletionEventChannel() {
+                const auto compChannel = ibv_create_comp_channel(this);
+                assert(compChannel != nullptr);
+                //return compChannel;
+            }
+        };
+    }
+
+    uint32_t incRkey(uint32_t rkey) {
+        return ibv_inc_rkey(rkey);
     }
 }
 
