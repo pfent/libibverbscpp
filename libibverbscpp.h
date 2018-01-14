@@ -11,6 +11,34 @@
 namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
 
+    enum class NodeType : std::underlying_type_t<ibv_node_type> {
+        UNKNOWN = -1,
+        CA = 1,
+        SWITCH,
+        ROUTER,
+        RNIC,
+        USNIC,
+        USNIC_UDP,
+    };
+
+    enum class TransportType : std::underlying_type_t<ibv_transport_type> {
+        UNKNOWN = -1,
+        IB = 0,
+        IWARP,
+        USNIC,
+        USNIC_UDP,
+    };
+
+    enum class AccessFlag : std::underlying_type_t<ibv_access_flags> {
+        LOCAL_WRITE = 1,
+        REMOTE_WRITE = (1 << 1),
+        REMOTE_READ = (1 << 2),
+        REMOTE_ATOMIC = (1 << 3),
+        MW_BIND = (1 << 4),
+        ZERO_BASED = (1 << 5),
+        ON_DEMAND = (1 << 6),
+    };
+
     class Gid {
         ibv_gid underlying;
     public:
@@ -619,34 +647,6 @@ namespace ibv {
         };
     }
 
-    enum class NodeType : std::underlying_type_t<ibv_node_type> {
-        UNKNOWN = -1,
-        CA = 1,
-        SWITCH,
-        ROUTER,
-        RNIC,
-        USNIC,
-        USNIC_UDP,
-    };
-
-    enum class TransportType : std::underlying_type_t<ibv_transport_type> {
-        UNKNOWN = -1,
-        IB = 0,
-        IWARP,
-        USNIC,
-        USNIC_UDP,
-    };
-
-    enum class AccessFlag : std::underlying_type_t<ibv_access_flags> {
-        LOCAL_WRITE = 1,
-        REMOTE_WRITE = (1 << 1),
-        REMOTE_READ = (1 << 2),
-        REMOTE_ATOMIC = (1 << 3),
-        MW_BIND = (1 << 4),
-        ZERO_BASED = (1 << 5),
-        ON_DEMAND = (1 << 6),
-    };
-
     namespace completions {
         struct CompletionQueue : private ibv_cq {
             friend class CompletionEventChannel;
@@ -721,9 +721,16 @@ namespace ibv {
 
         struct Attributes : private ibv_srq_attr {
             friend class SharedReceiveQueue;
+
+            friend class InitAttributes;
+
+            explicit Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0) :
+                    ibv_srq_attr{max_wr, max_sge, srq_limit} {}
         };
 
         struct InitAttributes : private ibv_srq_init_attr {
+            explicit InitAttributes(Attributes attrs = Attributes(), void *context = nullptr) :
+                    ibv_srq_init_attr{context, attrs} {}
         };
 
         struct SharedReceiveQueue : private ibv_srq {
