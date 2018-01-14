@@ -1150,11 +1150,11 @@ namespace ibv {
         };
     }
 
-    uint32_t incRkey(uint32_t rkey) {
+    inline uint32_t incRkey(uint32_t rkey) {
         return ibv_inc_rkey(rkey);
     }
 
-    void forkInit() {
+    inline void forkInit() {
         const auto status = ibv_fork_init();
         assert(status == 0); // TODO: throw
     }
