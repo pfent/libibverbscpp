@@ -399,6 +399,14 @@ namespace ibv {
         };
     }
 
+    enum class Mtu : std::underlying_type_t<ibv_mtu> {
+        _256 = 1,
+        _512 = 2,
+        _1024 = 3,
+        _4096 = 5,
+        _2048 = 4,
+    };
+
     namespace port {
         enum class State : std::underlying_type_t<ibv_port_state> {
             NOP = 0,
@@ -436,9 +444,85 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_port_attr {
+            State getState() const {
+                return static_cast<State>(state);
+            }
+
+            Mtu getMaxMtu() const {
+                return static_cast<Mtu>(max_mtu);
+            }
+
+            Mtu getActiveMtu() const {
+                return static_cast<Mtu>(active_mtu);
+            }
+
+            int getGidTblLen() const {
+                return gid_tbl_len;
+            }
+
             bool hasCapability(CapabilityFlag flag) {
                 const auto rawFlag = static_cast<ibv_port_cap_flags>(flag);
                 return (port_cap_flags & rawFlag) == rawFlag;
+            }
+
+            uint32_t getMaxMsgSize() const {
+                return max_msg_sz;
+            }
+
+            uint32_t getBadPkeyCntr() const {
+                return bad_pkey_cntr;
+            }
+
+            uint32_t getQkeyViolCntr() const {
+                return qkey_viol_cntr;
+            }
+
+            uint16_t getPkeyTblLen() const {
+                return pkey_tbl_len;
+            }
+
+            uint16_t getLid() const {
+                return lid;
+            }
+
+            uint16_t getSmLid() const {
+                return sm_lid;
+            }
+
+            uint8_t getLmc() const {
+                return lmc;
+            }
+
+            uint8_t getMaxVlNum() const {
+                return max_vl_num;
+            }
+
+            uint8_t getSmSl() const {
+                return sm_sl;
+            }
+
+            uint8_t getSubnetTimeout() const {
+                return subnet_timeout;
+            }
+
+            uint8_t getInitTypeReply() const {
+                return init_type_reply;
+            }
+
+            uint8_t getActiveWidth() const {
+                return active_width;
+            }
+
+            uint8_t getActiveSpeed() const {
+                return active_speed;
+            }
+
+            uint8_t getPhysState() const {
+                return phys_state;
+            }
+
+            uint8_t getLinkLayer() const {
+                return link_layer;
             }
         };
     }
@@ -471,10 +555,172 @@ namespace ibv {
             MANAGED_FLOW_STEERING = 1 << 29
         };
 
+        enum class AtomicCapabilities : std::underlying_type_t<ibv_atomic_cap> {
+            NONE,
+            HCA,
+            GLOB
+        };
+
         struct Attributes : private ibv_device_attr {
-            bool hasCapability(CapabilityFlag flag) {
+            std::string_view getFwVer() const {
+                return fw_ver;
+            }
+
+            uint64_t getNodeGuid() const {
+                return node_guid;
+            }
+
+            uint64_t getSysImageGuid() const {
+                return sys_image_guid;
+            }
+
+            uint64_t getMaxMrSize() const {
+                return max_mr_size;
+            }
+
+            uint64_t getPageSizeCap() const {
+                return page_size_cap;
+            }
+
+            uint32_t getVendorId() const {
+                return vendor_id;
+            }
+
+            uint32_t getVendorPartId() const {
+                return vendor_part_id;
+            }
+
+            uint32_t getHwVer() const {
+                return hw_ver;
+            }
+
+            int getMaxQp() const {
+                return max_qp;
+            }
+
+            int getMaxQpWr() const {
+                return max_qp_wr;
+            }
+
+            bool hasCapability(CapabilityFlag flag) const {
                 const auto rawFlag = static_cast<ibv_device_cap_flags>(flag);
                 return (device_cap_flags & rawFlag) == rawFlag;
+            }
+
+            int getMaxSge() const {
+                return max_sge;
+            }
+
+            int getMaxSgeRd() const {
+                return max_sge_rd;
+            }
+
+            int getMaxCq() const {
+                return max_cq;
+            }
+
+            int getMaxCqe() const {
+                return max_cqe;
+            }
+
+            int getMaxMr() const {
+                return max_mr;
+            }
+
+            int getMaxPd() const {
+                return max_pd;
+            }
+
+            int getMaxQpRdAtom() const {
+                return max_qp_rd_atom;
+            }
+
+            int getMaxEeRdAtom() const {
+                return max_ee_rd_atom;
+            }
+
+            int getMaxResRdAtom() const {
+                return max_res_rd_atom;
+            }
+
+            int getMaxQpInitRdAtom() const {
+                return max_qp_init_rd_atom;
+            }
+
+            int getMaxEeInitRdAtom() const {
+                return max_ee_init_rd_atom;
+            }
+
+            AtomicCapabilities getAtomicCap() const {
+                return static_cast<AtomicCapabilities>(atomic_cap);
+            }
+
+            int getMaxEe() const {
+                return max_ee;
+            }
+
+            int getMaxRdd() const {
+                return max_rdd;
+            }
+
+            int getMaxMw() const {
+                return max_mw;
+            }
+
+            int getMaxRawIpv6Qp() const {
+                return max_raw_ipv6_qp;
+            }
+
+            int getMaxRawEthyQp() const {
+                return max_raw_ethy_qp;
+            }
+
+            int getMaxMcastGrp() const {
+                return max_mcast_grp;
+            }
+
+            int getMaxMcastQpAttach() const {
+                return max_mcast_qp_attach;
+            }
+
+            int getMaxTotalMcastQpAttach() const {
+                return max_total_mcast_qp_attach;
+            }
+
+            int getMaxAh() const {
+                return max_ah;
+            }
+
+            int getMaxFmr() const {
+                return max_fmr;
+            }
+
+            int getMaxMapPerFmr() const {
+                return max_map_per_fmr;
+            }
+
+            int getMaxSrq() const {
+                return max_srq;
+            }
+
+            int getMaxSrqWr() const {
+                return max_srq_wr;
+            }
+
+            int getMaxSrqSge() const {
+                return max_srq_sge;
+            }
+
+            uint16_t getMaxPkeys() const {
+                return max_pkeys;
+            }
+
+            uint8_t getLocalCaAckDelay() const {
+                return local_ca_ack_delay;
+            }
+
+            uint8_t getPhysPortCnt() const {
+                return phys_port_cnt;
             }
         };
 
@@ -872,6 +1118,26 @@ namespace ibv {
         };
     }
 
+    namespace xrcd {
+        enum class InitAttributesMask : std::underlying_type_t<ibv_xrcd_init_attr_mask> {
+            FD = 1 << 0,
+            OFLAGS = 1 << 1,
+            RESERVED = 1 << 2
+        };
+
+        struct InitAttributes : private ibv_xrcd_init_attr {
+        };
+
+        struct ExtendedConnectionDomain : private ibv_xrcd {
+            ExtendedConnectionDomain(const ExtendedConnectionDomain &) = delete;
+
+            ~ExtendedConnectionDomain() {
+                const auto status = ibv_close_xrcd(this);
+                assert(status == 0);
+            }
+        };
+    }
+
     namespace queuepair {
         enum class Type : std::underlying_type_t<ibv_qp_type> {
             RC = 2,
@@ -944,13 +1210,256 @@ namespace ibv {
         };
 
         struct Capabilities : public ibv_qp_cap {
+            uint32_t getMaxSendWr() const {
+                return max_send_wr;
+            }
+
+            uint32_t getMaxRecvWr() const {
+                return max_recv_wr;
+            }
+
+            uint32_t getMaxSendSge() const {
+                return max_send_sge;
+            }
+
+            uint32_t getMaxRecvSge() const {
+                return max_recv_sge;
+            }
+
+            uint32_t getMaxInlineData() const {
+                return max_inline_data;
+            }
         };
 
         struct OpenAttributes : private ibv_qp_open_attr {
+            void setComp_mask(uint32_t comp_mask) {
+                comp_mask = comp_mask;
+            }
+
+            void setQpNum(uint32_t qp_num) {
+                this->qp_num = qp_num;
+            }
+
+            void setXrcd(xrcd::ExtendedConnectionDomain &xrcd) {
+                this->xrcd = reinterpret_cast<ibv_xrcd *>(&xrcd);
+            }
+
+            void setQpContext(void *qp_context) {
+                this->qp_context = qp_context;
+            }
+
+            void setQpType(Type qp_type) {
+                this->qp_type = static_cast<ibv_qp_type>(qp_type);
+            }
         };
 
         struct Attributes : private ibv_qp_attr {
             friend class QueuePair;
+
+            State getQpState() const {
+                return static_cast<State>(qp_state);
+            }
+
+            void setQpState(State qp_state) {
+                this->qp_state = static_cast<ibv_qp_state>(qp_state);
+            }
+
+            State getCurQpState() const {
+                return static_cast<State>(cur_qp_state);
+            }
+
+            void setCurQpState(State cur_qp_state) {
+                this->cur_qp_state = static_cast<ibv_qp_state>(cur_qp_state);
+            }
+
+            Mtu getPathMtu() const {
+                return static_cast<Mtu>(path_mtu);
+            }
+
+            void setPathMtu(Mtu path_mtu) {
+                this->path_mtu = static_cast<ibv_mtu>(path_mtu);
+            }
+
+            MigrationState getPath_mig_state() const {
+                return static_cast<MigrationState>(path_mig_state);
+            }
+
+            void setPathMigState(MigrationState path_mig_state) {
+                this->path_mig_state = static_cast<ibv_mig_state>(path_mig_state);
+            }
+
+            uint32_t getQkey() const {
+                return qkey;
+            }
+
+            void setQkey(uint32_t qkey) {
+                this->qkey = qkey;
+            }
+
+            uint32_t getRqPsn() const {
+                return rq_psn;
+            }
+
+            void setRqPsn(uint32_t rq_psn) {
+                this->rq_psn = rq_psn;
+            }
+
+            uint32_t getSqPsn() const {
+                return sq_psn;
+            }
+
+            void setSqPsn(uint32_t sq_psn) {
+                this->sq_psn = sq_psn;
+            }
+
+            uint32_t getDestQpNum() const {
+                return dest_qp_num;
+            }
+
+            void setDestQpNum(uint32_t dest_qp_num) {
+                this->dest_qp_num = dest_qp_num;
+            }
+
+            bool hasQpAccessFlags(AccessFlag flag) const {
+                const auto rawFlag = static_cast<ibv_access_flags>(flag);
+                return (qp_access_flags & rawFlag) == rawFlag;
+            }
+
+            void setQp_access_flags(std::initializer_list<AccessFlag> qp_access_flags) {
+                int raw = 0;
+                for (auto flag : qp_access_flags) {
+                    raw |= static_cast<ibv_access_flags>(flag);
+                }
+                this->qp_access_flags = raw;
+            }
+
+            const Capabilities &getCap() const {
+                return reinterpret_cast<const Capabilities &>(cap);
+            }
+
+            void setCap(const Capabilities &cap) {
+                this->cap = cap;
+            }
+
+            const ah::Attributes &getAhAttr() const {
+                return reinterpret_cast<const ah::Attributes &>(ah_attr);
+            }
+
+            void setAhAttr(const ah::Attributes &ah_attr) {
+                this->ah_attr = reinterpret_cast<const ibv_ah_attr &>(ah_attr);
+            }
+
+            const ah::Attributes &getAltAhAttr() const {
+                return reinterpret_cast<const ah::Attributes &>(alt_ah_attr);
+            }
+
+            void setAltAhAttr(const ah::Attributes &alt_ah_attr) {
+                this->alt_ah_attr = reinterpret_cast<const ibv_ah_attr &>(alt_ah_attr);
+            }
+
+            uint16_t getPkeyIndex() const {
+                return pkey_index;
+            }
+
+            void setPkeyIndex(uint16_t pkey_index) {
+                this->pkey_index = pkey_index;
+            }
+
+            uint16_t getAltPkeyIndex() const {
+                return alt_pkey_index;
+            }
+
+            void setAltPkeyIndex(uint16_t alt_pkey_index) {
+                this->alt_pkey_index = alt_pkey_index;
+            }
+
+            uint8_t getEnSqdAsyncNotify() const {
+                return en_sqd_async_notify;
+            }
+
+            void setEnSqdAsyncNotify(uint8_t en_sqd_async_notify) {
+                this->en_sqd_async_notify = en_sqd_async_notify;
+            }
+
+            uint8_t getSqDraining() const {
+                return sq_draining;
+            }
+
+            void setSqDraining(uint8_t sq_draining) {
+                this->sq_draining = sq_draining;
+            }
+
+            uint8_t getMaxRdAtomic() const {
+                return max_rd_atomic;
+            }
+
+            void setMaxRdAtomic(uint8_t max_rd_atomic) {
+                this->max_rd_atomic = max_rd_atomic;
+            }
+
+            uint8_t getMaxDestRdAtomic() const {
+                return max_dest_rd_atomic;
+            }
+
+            void setMaxDestRdAtomic(uint8_t max_dest_rd_atomic) {
+                this->max_dest_rd_atomic = max_dest_rd_atomic;
+            }
+
+            uint8_t getMinRnrTimer() const {
+                return min_rnr_timer;
+            }
+
+            void setMinRnrTimer(uint8_t min_rnr_timer) {
+                this->min_rnr_timer = min_rnr_timer;
+            }
+
+            uint8_t getPortNum() const {
+                return port_num;
+            }
+
+            void setPortNum(uint8_t port_num) {
+                this->port_num = port_num;
+            }
+
+            uint8_t getTimeout() const {
+                return timeout;
+            }
+
+            void setTimeout(uint8_t timeout) {
+                this->timeout = timeout;
+            }
+
+            uint8_t getRetryCnt() const {
+                return retry_cnt;
+            }
+
+            void setRetryCnt(uint8_t retry_cnt) {
+                this->retry_cnt = retry_cnt;
+            }
+
+            uint8_t getRnrRetry() const {
+                return rnr_retry;
+            }
+
+            void setRnrRetry(uint8_t rnr_retry) {
+                this->rnr_retry = rnr_retry;
+            }
+
+            uint8_t getAltPortNum() const {
+                return alt_port_num;
+            }
+
+            void setAltPortNum(uint8_t alt_port_num) {
+                this->alt_port_num = alt_port_num;
+            }
+
+            uint8_t getAltTimeout() const {
+                return alt_timeout;
+            }
+
+            void setAltTimeout(uint8_t alt_timeout) {
+                this->alt_timeout = alt_timeout;
+            }
         };
 
         struct InitAttributes : private ibv_qp_init_attr {
@@ -1122,26 +1631,6 @@ namespace ibv {
                 const auto ah = ibv_create_ah_from_wc(this, reinterpret_cast<ibv_wc *>(&wc), grh, port_num);
                 assert(ah != nullptr);  // TODO: throw
                 return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
-            }
-        };
-    }
-
-    namespace xrcd {
-        enum class InitAttributesMask : std::underlying_type_t<ibv_xrcd_init_attr_mask> {
-            FD = 1 << 0,
-            OFLAGS = 1 << 1,
-            RESERVED = 1 << 2
-        };
-
-        struct InitAttributes : private ibv_xrcd_init_attr {
-        };
-
-        struct ExtendedConnectionDomain : private ibv_xrcd {
-            ExtendedConnectionDomain(const ExtendedConnectionDomain &) = delete;
-
-            ~ExtendedConnectionDomain() {
-                const auto status = ibv_close_xrcd(this);
-                assert(status == 0);
             }
         };
     }
