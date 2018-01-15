@@ -517,6 +517,11 @@ namespace ibv {
             size_t size() const {
                 return static_cast<size_t>(num_devices);
             }
+
+            Device *&operator[](int idx) {
+                assert(idx < num_devices);
+                return devices[idx];
+            }
         };
     }
 
