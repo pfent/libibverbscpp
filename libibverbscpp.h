@@ -209,12 +209,16 @@ namespace ibv {
                 return static_cast<Status>(status);
             }
 
-            bool isSusccessful() const {
+            bool isSuccessful() const {
                 return getStatus() == Status::SUCCESS;
             }
 
             explicit operator bool() const {
-                return isSusccessful();
+                return isSuccessful();
+            }
+
+            Opcode getOpcode() const {
+                return static_cast<Opcode>(opcode);
             }
 
             bool hasImmData() const {
@@ -287,6 +291,10 @@ namespace ibv {
                     return "IBV_WC_RECV_RDMA_WITH_IMM";
             }
             __builtin_unreachable();
+        }
+
+        std::string to_string(Status status) {
+            return ibv_wc_status_str(static_cast<ibv_wc_status>(status));
         }
     }
 
@@ -484,7 +492,7 @@ namespace ibv {
             context::Context *open() {
                 const auto context = reinterpret_cast<context::Context *>(ibv_open_device(this));
                 assert(context); // TODO: throw
-                return context;
+                return context; // TODO: unique_ptr
             }
         };
 
@@ -982,6 +990,10 @@ namespace ibv {
             ~QueuePair() {
                 const auto status = ::ibv_destroy_qp(this);
                 assert(status == 0); // TODO: throw
+            }
+
+            uint32_t getNum() const {
+                return qp_num;
             }
 
             void modify(Attributes &attr, std::initializer_list<AttrMask> modifiedAttributes) {
