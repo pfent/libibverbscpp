@@ -7,6 +7,7 @@
 #include <functional>
 #include <cassert>
 #include <memory>
+#include <sstream>
 
 namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
@@ -50,190 +51,6 @@ namespace ibv {
             return underlying.global.interface_id;
         }
     };
-
-    namespace workrequest {
-        // internal
-        enum class Opcode : std::underlying_type_t<ibv_wr_opcode> {
-            RDMA_WRITE,
-            RDMA_WRITE_WITH_IMM,
-            SEND,
-            SEND_WITH_IMM,
-            RDMA_READ,
-            ATOMIC_CMP_AND_SWP,
-            ATOMIC_FETCH_AND_ADD,
-            LOCAL_INV,
-            BIND_MW,
-            SEND_WITH_INV,
-        };
-
-        enum class Flags : std::underlying_type_t<ibv_send_flags> {
-            FENCE = 1 << 0,
-            SIGNALED = 1 << 1,
-            SOLICITED = 1 << 2,
-            INLINE = 1 << 3,
-            IP_CSUM = 1 << 4
-        };
-
-        struct SendWr : private ibv_send_wr {
-            void setId(uint64_t id) {
-                wr_id = id;
-            }
-
-            uint64_t getId() const {
-                return wr_id;
-            }
-
-            void setNext(SendWr *wrList) {
-                next = wrList;
-            }
-
-            void setSge(ibv_sge *sg_list, int num_sge) { // TODO: setLocalAddress instead of SGE
-                this->sg_list = sg_list;
-                this->num_sge = num_sge;
-            }
-
-            void setFlags(std::initializer_list<Flags> flags) { // TODO: utility functions with bools
-                send_flags = 0;
-                for (const auto flag : flags) {
-                    send_flags |= static_cast<ibv_send_flags>(flag);
-                }
-            }
-
-        protected:
-            void setOpcode(Opcode opcode) {
-                this->opcode = static_cast<ibv_wr_opcode>(opcode);
-            }
-
-            void setImmData(uint32_t data) {
-                imm_data = data;
-            }
-
-            decltype(wr) &getWr() {
-                return wr;
-            }
-        };
-
-        // internal
-        struct Rdma : SendWr {
-            void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
-                getWr().rdma.remote_addr = remote_addr;
-                getWr().rdma.rkey = rkey;
-            };
-        };
-
-        struct Write : Rdma {
-            Write() : Rdma{} {
-                SendWr::setOpcode(Opcode::RDMA_WRITE);
-            }
-        };
-
-        struct WriteWithImm : Write {
-            WriteWithImm() : Write{} {
-                WriteWithImm::setOpcode(Opcode::RDMA_WRITE_WITH_IMM);
-            }
-
-            using SendWr::setImmData;
-        };
-
-        struct Send : SendWr {
-            Send() : SendWr{} {
-                SendWr::setOpcode(Opcode::SEND);
-            }
-        };
-
-        struct SendWithImm : SendWr {
-            SendWithImm() : SendWr{} {
-                SendWr::setOpcode(Opcode::SEND_WITH_IMM);
-            }
-
-            using SendWr::setImmData;
-        };
-
-        struct Read : Rdma {
-            Read() : Rdma{} {
-                SendWr::setOpcode(Opcode::RDMA_READ);
-            }
-        };
-
-        // internal
-        struct Atomic : SendWr {
-            void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
-                getWr().atomic.remote_addr = remote_addr;
-                getWr().atomic.rkey = rkey;
-            };
-        };
-
-        struct AtomicCompareSwap : Atomic {
-            AtomicCompareSwap() : Atomic{} {
-                SendWr::setOpcode(Opcode::ATOMIC_CMP_AND_SWP);
-            }
-
-            AtomicCompareSwap(uint64_t compare, uint64_t swap) : AtomicCompareSwap() {
-                setCompareValue(compare);
-                setSwapValue(swap);
-            }
-
-            void setCompareValue(uint64_t value) {
-                getWr().atomic.compare_add = value;
-            }
-
-            void setSwapValue(uint64_t value) {
-                getWr().atomic.swap = value;
-            }
-        };
-
-        struct AtomicFetchAdd : Atomic {
-            AtomicFetchAdd() : Atomic{} {
-                SendWr::setOpcode(Opcode::ATOMIC_FETCH_AND_ADD);
-            }
-
-            explicit AtomicFetchAdd(uint64_t value) : AtomicFetchAdd() {
-                setAddValue(value);
-            }
-
-            void setAddValue(uint64_t value) {
-                getWr().atomic.compare_add = value;
-            }
-        };
-
-        struct Recv : private ibv_recv_wr {
-            void setId(uint64_t id) {
-                wr_id = id;
-            }
-
-            uint64_t getId() const {
-                return wr_id;
-            }
-
-            void setNext(Recv *next) {
-                this->next = next;
-            }
-
-            void setSge(ibv_sge *sg_list, int num_sge) { // TODO: setLocalAddress instead of SGE
-                this->sg_list = sg_list;
-                this->num_sge = num_sge;
-            }
-        };
-
-        template<class SendWorkRequest>
-        class Simple : public SendWorkRequest {
-            static_assert(std::is_base_of<ibv_send_wr, SendWorkRequest>::value);
-
-            ibv_sge sge{};
-
-        public:
-            using SendWorkRequest::SendWorkRequest;
-
-            void setLocalAddress(uint64_t addr, uint32_t length, uint32_t lkey) {
-                this->sg_list = &sge;
-                this->num_sge = 1;
-
-                sge.addr = addr;
-                sge.length = length;
-                sge.lkey = lkey;
-            }
-        };
-    }
 
     namespace flow {
         enum class Flags : std::underlying_type_t<ibv_flow_flags> {
@@ -447,6 +264,30 @@ namespace ibv {
                 return dlid_path_bits;
             };
         };
+
+        std::string to_string(Opcode opcode) {
+            switch (opcode) {
+                case Opcode::SEND:
+                    return "IBV_WC_SEND";
+                case Opcode::RDMA_WRITE:
+                    return "IBV_WC_RDMA_WRITE";
+                case Opcode::RDMA_READ:
+                    return "IBV_WC_RDMA_READ";
+                case Opcode::COMP_SWAP:
+                    return "IBV_WC_COMP_SWAP";
+                case Opcode::FETCH_ADD:
+                    return "IBV_WC_FETCH_ADD";
+                case Opcode::BIND_MW:
+                    return "IBV_WC_BIND_MW";
+                case Opcode::LOCAL_INV:
+                    return "IBV_WC_LOCAL_INV";
+                case Opcode::RECV:
+                    return "IBV_WC_RECV";
+                case Opcode::RECV_RDMA_WITH_IMM:
+                    return "IBV_WC_RECV_RDMA_WITH_IMM";
+            }
+            __builtin_unreachable();
+        }
     }
 
     namespace event {
@@ -547,79 +388,6 @@ namespace ibv {
         };
 
         struct PollAttributes : private ibv_poll_cq_attr {
-        };
-    }
-
-    namespace srq {
-        enum class AttributeMask : std::underlying_type_t<ibv_srq_attr_mask> {
-            MAX_WR = 1 << 0,
-            LIMIT = 1 << 1
-        };
-
-        enum class Type : std::underlying_type_t<ibv_srq_type> {
-            BASIC,
-            XRC
-        };
-
-        enum class InitAttributeMask : std::underlying_type_t<ibv_srq_init_attr_mask> {
-            TYPE = 1 << 0,
-            PD = 1 << 1,
-            XRCD = 1 << 2,
-            CQ = 1 << 3,
-            RESERVED = 1 << 4
-        };
-
-        struct Attributes : private ibv_srq_attr {
-            friend class SharedReceiveQueue;
-
-            friend class InitAttributes;
-
-            explicit Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0) :
-                    ibv_srq_attr{max_wr, max_sge, srq_limit} {}
-        };
-
-        struct InitAttributes : private ibv_srq_init_attr {
-            explicit InitAttributes(Attributes attrs = Attributes(), void *context = nullptr) :
-                    ibv_srq_init_attr{context, attrs} {}
-        };
-
-        struct SharedReceiveQueue : private ibv_srq {
-            SharedReceiveQueue(const SharedReceiveQueue &) = delete;
-
-            ~SharedReceiveQueue() {
-                const auto status = ibv_destroy_srq(this);
-                assert(status == 0); // TODO: report error
-            }
-
-            void modify(Attributes &attr, std::initializer_list<AttributeMask> modifiedAttrs) {
-                int modifiedMask = 0;
-                for (auto mod : modifiedAttrs) {
-                    modifiedMask |= static_cast<ibv_srq_attr_mask>(mod);
-                }
-
-                const auto status = ibv_modify_srq(this, &attr, modifiedMask);
-                assert(status == 0); // TODO: throw
-            }
-
-            Attributes query() {
-                Attributes res{};
-                const auto status = ibv_query_srq(this, &res);
-                assert(status == 0); // TODO: throw
-                return res;
-            }
-
-            uint32_t getNumber() {
-                uint32_t num = 0;
-                const auto status = ibv_get_srq_num(this, &num);
-                assert(status == 0); // TODO: throw
-                return num;
-            }
-
-            void postRecv(workrequest::Recv &wr, workrequest::Recv *&badWr) {
-                const auto status = ibv_post_srq_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
-                                                      reinterpret_cast<ibv_recv_wr **>(&badWr));
-                assert(status == 0);
-            }
         };
     }
 
@@ -745,6 +513,10 @@ namespace ibv {
             Device **end() {
                 return &devices[num_devices];
             }
+
+            size_t size() const {
+                return static_cast<size_t>(num_devices);
+            }
         };
     }
 
@@ -763,6 +535,9 @@ namespace ibv {
             DO_FORK_OLD = -3,
             CMD = -4,
             CMD_AND_DO_FORK_NEW = -5,
+        };
+
+        struct Slice : public ibv_sge {
         };
 
         struct MemoryRegion : private ibv_mr {
@@ -817,6 +592,268 @@ namespace ibv {
                                                  reinterpret_cast<ibv_pd *> (&newPd), newAddr, newLength, access);
                 assert(status == 0); // TODO: throw
                 return static_cast<ReregErrorCode>(status);
+            }
+        };
+
+        std::string to_string(const MemoryRegion &mr) {
+            std::stringstream addr;
+            addr << std::hex << mr.getAddr();
+            return std::string("ptr=") + addr.str() + " size=" + std::to_string(mr.getLength()) + " key={..}";
+        }
+    }
+
+    namespace workrequest {
+        // internal
+        enum class Opcode : std::underlying_type_t<ibv_wr_opcode> {
+            RDMA_WRITE,
+            RDMA_WRITE_WITH_IMM,
+            SEND,
+            SEND_WITH_IMM,
+            RDMA_READ,
+            ATOMIC_CMP_AND_SWP,
+            ATOMIC_FETCH_AND_ADD,
+            LOCAL_INV,
+            BIND_MW,
+            SEND_WITH_INV,
+        };
+
+        enum class Flags : std::underlying_type_t<ibv_send_flags> {
+            FENCE = 1 << 0,
+            SIGNALED = 1 << 1,
+            SOLICITED = 1 << 2,
+            INLINE = 1 << 3,
+            IP_CSUM = 1 << 4
+        };
+
+        struct SendWr : private ibv_send_wr {
+            void setId(uint64_t id) {
+                wr_id = id;
+            }
+
+            uint64_t getId() const {
+                return wr_id;
+            }
+
+            void setNext(SendWr *wrList) {
+                next = wrList;
+            }
+
+            void setSge(memoryregion::Slice *scatterGatherArray, int size) {
+                sg_list = scatterGatherArray;
+                num_sge = size;
+            }
+
+            void setFlags(std::initializer_list<Flags> flags) { // TODO: utility functions with bools
+                send_flags = 0;
+                for (const auto flag : flags) {
+                    send_flags |= static_cast<ibv_send_flags>(flag);
+                }
+            }
+
+        protected:
+            void setOpcode(Opcode opcode) {
+                this->opcode = static_cast<ibv_wr_opcode>(opcode);
+            }
+
+            void setImmData(uint32_t data) {
+                imm_data = data;
+            }
+
+            decltype(wr) &getWr() {
+                return wr;
+            }
+        };
+
+        // internal
+        struct Rdma : SendWr {
+            void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
+                getWr().rdma.remote_addr = remote_addr;
+                getWr().rdma.rkey = rkey;
+            };
+        };
+
+        struct Write : Rdma {
+            Write() : Rdma{} {
+                SendWr::setOpcode(Opcode::RDMA_WRITE);
+            }
+        };
+
+        struct WriteWithImm : Write {
+            WriteWithImm() : Write{} {
+                WriteWithImm::setOpcode(Opcode::RDMA_WRITE_WITH_IMM);
+            }
+
+            using SendWr::setImmData;
+        };
+
+        struct Send : SendWr {
+            Send() : SendWr{} {
+                SendWr::setOpcode(Opcode::SEND);
+            }
+        };
+
+        struct SendWithImm : SendWr {
+            SendWithImm() : SendWr{} {
+                SendWr::setOpcode(Opcode::SEND_WITH_IMM);
+            }
+
+            using SendWr::setImmData;
+        };
+
+        struct Read : Rdma {
+            Read() : Rdma{} {
+                SendWr::setOpcode(Opcode::RDMA_READ);
+            }
+        };
+
+        // internal
+        struct Atomic : SendWr {
+            void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
+                getWr().atomic.remote_addr = remote_addr;
+                getWr().atomic.rkey = rkey;
+            };
+        };
+
+        struct AtomicCompareSwap : Atomic {
+            AtomicCompareSwap() : Atomic{} {
+                SendWr::setOpcode(Opcode::ATOMIC_CMP_AND_SWP);
+            }
+
+            AtomicCompareSwap(uint64_t compare, uint64_t swap) : AtomicCompareSwap() {
+                setCompareValue(compare);
+                setSwapValue(swap);
+            }
+
+            void setCompareValue(uint64_t value) {
+                getWr().atomic.compare_add = value;
+            }
+
+            void setSwapValue(uint64_t value) {
+                getWr().atomic.swap = value;
+            }
+        };
+
+        struct AtomicFetchAdd : Atomic {
+            AtomicFetchAdd() : Atomic{} {
+                SendWr::setOpcode(Opcode::ATOMIC_FETCH_AND_ADD);
+            }
+
+            explicit AtomicFetchAdd(uint64_t value) : AtomicFetchAdd() {
+                setAddValue(value);
+            }
+
+            void setAddValue(uint64_t value) {
+                getWr().atomic.compare_add = value;
+            }
+        };
+
+        struct Recv : private ibv_recv_wr {
+            void setId(uint64_t id) {
+                wr_id = id;
+            }
+
+            uint64_t getId() const {
+                return wr_id;
+            }
+
+            void setNext(Recv *next) {
+                this->next = next;
+            }
+
+            void setSge(memoryregion::Slice *scatterGatherArray, int size) { // TODO: setLocalAddress instead of SGE
+                sg_list = scatterGatherArray;
+                num_sge = size;
+            }
+        };
+
+        template<class SendWorkRequest>
+        class Simple : public SendWorkRequest {
+            static_assert(std::is_base_of<ibv_send_wr, SendWorkRequest>::value);
+
+            memoryregion::Slice slice{};
+
+        public:
+            using SendWorkRequest::SendWorkRequest;
+
+            void setLocalAddress(uint64_t addr, uint32_t length, uint32_t lkey) {
+                SendWorkRequest::setSge(&slice, 1);
+
+                slice.addr = addr;
+                slice.length = length;
+                slice.lkey = lkey;
+            }
+        };
+    }
+
+    namespace srq {
+        enum class AttributeMask : std::underlying_type_t<ibv_srq_attr_mask> {
+            MAX_WR = 1 << 0,
+            LIMIT = 1 << 1
+        };
+
+        enum class Type : std::underlying_type_t<ibv_srq_type> {
+            BASIC,
+            XRC
+        };
+
+        enum class InitAttributeMask : std::underlying_type_t<ibv_srq_init_attr_mask> {
+            TYPE = 1 << 0,
+            PD = 1 << 1,
+            XRCD = 1 << 2,
+            CQ = 1 << 3,
+            RESERVED = 1 << 4
+        };
+
+        struct Attributes : private ibv_srq_attr {
+            friend class SharedReceiveQueue;
+
+            friend class InitAttributes;
+
+            explicit Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0) :
+                    ibv_srq_attr{max_wr, max_sge, srq_limit} {}
+        };
+
+        struct InitAttributes : private ibv_srq_init_attr {
+            explicit InitAttributes(Attributes attrs = Attributes(), void *context = nullptr) :
+                    ibv_srq_init_attr{context, attrs} {}
+        };
+
+        struct SharedReceiveQueue : private ibv_srq {
+            SharedReceiveQueue(const SharedReceiveQueue &) = delete;
+
+            ~SharedReceiveQueue() {
+                const auto status = ibv_destroy_srq(this);
+                assert(status == 0); // TODO: report error
+            }
+
+            void modify(Attributes &attr, std::initializer_list<AttributeMask> modifiedAttrs) {
+                int modifiedMask = 0;
+                for (auto mod : modifiedAttrs) {
+                    modifiedMask |= static_cast<ibv_srq_attr_mask>(mod);
+                }
+
+                const auto status = ibv_modify_srq(this, &attr, modifiedMask);
+                assert(status == 0); // TODO: throw
+            }
+
+            Attributes query() {
+                Attributes res{};
+                const auto status = ibv_query_srq(this, &res);
+                assert(status == 0); // TODO: throw
+                return res;
+            }
+
+            uint32_t getNumber() {
+                uint32_t num = 0;
+                const auto status = ibv_get_srq_num(this, &num);
+                assert(status == 0); // TODO: throw
+                return num;
+            }
+
+            void postRecv(workrequest::Recv &wr, workrequest::Recv *&badWr) {
+                const auto status = ibv_post_srq_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
+                                                      reinterpret_cast<ibv_recv_wr **>(&badWr));
+                assert(status == 0);
             }
         };
     }
