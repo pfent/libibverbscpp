@@ -836,6 +836,10 @@ namespace ibv {
                 return rkey;
             };
 
+            Slice getSlice(uint32_t offset, uint32_t length) {
+                return Slice{reinterpret_cast<uintptr_t>(addr) + offset, length, lkey};
+            }
+
             ReregErrorCode
             reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain &newPd,
                        void *newAddr,
