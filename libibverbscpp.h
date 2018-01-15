@@ -489,10 +489,11 @@ namespace ibv {
                 return ibv_get_device_guid(this);
             }
 
-            context::Context *open() {
-                const auto context = reinterpret_cast<context::Context *>(ibv_open_device(this));
+            std::unique_ptr<context::Context> open() {
+                using Ctx = context::Context;
+                const auto context = ibv_open_device(this);
                 assert(context); // TODO: throw
-                return context; // TODO: unique_ptr
+                return std::unique_ptr<Ctx>(reinterpret_cast<Ctx *>(context));
             }
         };
 
