@@ -836,8 +836,12 @@ namespace ibv {
                 return rkey;
             };
 
-            Slice getSlice(uint32_t offset, uint32_t length) {
-                return Slice{reinterpret_cast<uintptr_t>(addr) + offset, length, lkey};
+            Slice getSlice() {
+                return Slice{reinterpret_cast<uintptr_t>(addr), static_cast<uint32_t>(length), lkey};
+            }
+
+            Slice getSlice(uint32_t offset, uint32_t sliceLength) {
+                return Slice{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey};
             }
 
             ReregErrorCode
@@ -1024,7 +1028,7 @@ namespace ibv {
                 this->next = next;
             }
 
-            void setSge(memoryregion::Slice *scatterGatherArray, int size) { // TODO: setLocalAddress instead of SGE
+            void setSge(memoryregion::Slice *scatterGatherArray, int size) {
                 sg_list = scatterGatherArray;
                 num_sge = size;
             }
@@ -1039,12 +1043,10 @@ namespace ibv {
         public:
             using SendWorkRequest::SendWorkRequest;
 
-            void setLocalAddress(uint64_t addr, uint32_t length, uint32_t lkey) {
+            void setLocalAddress(const memoryregion::Slice& sge) {
                 SendWorkRequest::setSge(&slice, 1);
 
-                slice.addr = addr;
-                slice.length = length;
-                slice.lkey = lkey;
+                slice = sge;
             }
         };
     }
