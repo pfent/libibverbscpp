@@ -84,6 +84,32 @@ namespace ibv {
         }
     };
 
+    struct GlobalRoutingHeader : private ibv_grh {
+        uint32_t getVersionTclassFlow() const {
+            return version_tclass_flow;
+        }
+
+        uint16_t getPaylen() const {
+            return paylen;
+        }
+
+        uint8_t getNextHdr() const {
+            return next_hdr;
+        }
+
+        uint8_t getHopLimit() const {
+            return hop_limit;
+        }
+
+        const Gid &getSgid() const {
+            return *reinterpret_cast<const Gid *>(&sgid);
+        }
+
+        const Gid &getDgid() const {
+            return *reinterpret_cast<const Gid *>(&dgid);
+        }
+    };
+
     namespace flow {
         enum class Flags : std::underlying_type_t<ibv_flow_flags> {
             ALLOW_LOOP_BACK = IBV_FLOW_ATTR_FLAGS_ALLOW_LOOP_BACK,
@@ -123,6 +149,7 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_flow_attr {
+            // TODO
         };
 
         struct Flow : private ibv_flow {
@@ -362,10 +389,12 @@ namespace ibv {
                 ibv_ack_async_event(this);
             }
         };
+        // TODO: different events
     } // namespace event
 
     namespace ah {
         struct Attributes : private ibv_ah_attr {
+            // TODO
         };
 
         struct AddressHandle : private ibv_ah {
@@ -428,6 +457,7 @@ namespace ibv {
         };
 
         struct PollAttributes : private ibv_poll_cq_attr {
+            // TODO
         };
     } // namespace completions
 
@@ -913,7 +943,7 @@ namespace ibv {
             ATOMIC_FETCH_AND_ADD = IBV_WR_ATOMIC_FETCH_AND_ADD,
             LOCAL_INV = IBV_WR_LOCAL_INV,
             BIND_MW = IBV_WR_BIND_MW,
-            SEND_WITH_INV = IBV_WR_SEND_WITH_INV,
+            SEND_WITH_INV = IBV_WR_SEND_WITH_INV
         };
 
         enum class Flags : std::underlying_type_t<ibv_send_flags> {
@@ -942,10 +972,34 @@ namespace ibv {
                 num_sge = size;
             }
 
-            void setFlags(std::initializer_list<Flags> flags) { // TODO: utility functions with bools
+            void setFlag(Flags flag) {
+                send_flags |= static_cast<ibv_send_flags>(flag);
+            }
+
+            void setFence() {
+                setFlag(Flags::FENCE);
+            }
+
+            void setSignaled() {
+                setFlag(Flags::SIGNALED);
+            }
+
+            void setSolicited() {
+                setFlag(Flags::SOLICITED);
+            }
+
+            void setInline() {
+                setFlag(Flags::INLINE);
+            }
+
+            void setIpCsum() {
+                setFlag(Flags::IP_CSUM);
+            }
+
+            void setFlags(std::initializer_list<Flags> flags) {
                 send_flags = 0;
                 for (const auto flag : flags) {
-                    send_flags |= static_cast<ibv_send_flags>(flag);
+                    setFlag(flag);
                 }
             }
 
@@ -1403,7 +1457,7 @@ namespace ibv {
             }
 
             const Capabilities &getCap() const {
-                return reinterpret_cast<const Capabilities &>(cap);
+                return *reinterpret_cast<const Capabilities *>(&cap);
             }
 
             void setCap(const Capabilities &cap) {
@@ -1411,7 +1465,7 @@ namespace ibv {
             }
 
             const ah::Attributes &getAhAttr() const {
-                return reinterpret_cast<const ah::Attributes &>(ah_attr);
+                return *reinterpret_cast<const ah::Attributes *>(&ah_attr);
             }
 
             void setAhAttr(const ah::Attributes &ah_attr) {
@@ -1419,7 +1473,7 @@ namespace ibv {
             }
 
             const ah::Attributes &getAltAhAttr() const {
-                return reinterpret_cast<const ah::Attributes &>(alt_ah_attr);
+                return *reinterpret_cast<const ah::Attributes *>(&alt_ah_attr);
             }
 
             void setAltAhAttr(const ah::Attributes &alt_ah_attr) {
@@ -1694,10 +1748,13 @@ namespace ibv {
             }
 
             std::unique_ptr<ah::AddressHandle>
-            createAddressHandleFromWorkCompletion(workcompletion::WorkCompletion &wc, ibv_grh *grh /*TODO*/,
+            createAddressHandleFromWorkCompletion(workcompletion::WorkCompletion &wc, GlobalRoutingHeader *grh,
                                                   uint8_t port_num) {
                 using AH = ah::AddressHandle;
-                const auto ah = ibv_create_ah_from_wc(this, reinterpret_cast<ibv_wc *>(&wc), grh, port_num);
+                const auto ah = ibv_create_ah_from_wc(this,
+                                                      reinterpret_cast<ibv_wc *>(&wc),
+                                                      reinterpret_cast<ibv_grh *>(grh),
+                                                      port_num);
                 checkPtr("ibv_create_ah_from_wc", ah);
                 return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
             }
@@ -1791,14 +1848,15 @@ namespace ibv {
             }
 
             void initAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
-                                                    ibv_grh *grh /*TODO*/, ah::Attributes &attributes) {
-                const auto status = ibv_init_ah_from_wc(this, port_num, reinterpret_cast<ibv_wc *>(&wc), grh,
+                                                    GlobalRoutingHeader *grh, ah::Attributes &attributes) {
+                const auto status = ibv_init_ah_from_wc(this, port_num, reinterpret_cast<ibv_wc *>(&wc),
+                                                        reinterpret_cast<ibv_grh *>(grh),
                                                         reinterpret_cast<ibv_ah_attr *>(&attributes));
                 checkStatus("ibv_init_ah_from_wc", status);
             }
 
             ah::Attributes getAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
-                                                             ibv_grh *grh /*TODO*/) {
+                                                             GlobalRoutingHeader *grh) {
                 ah::Attributes attributes;
                 initAhAttributesFromWorkCompletion(port_num, wc, grh, attributes);
                 return attributes;
