@@ -45,31 +45,31 @@ namespace ibv {
     } // namespace
 
     enum class NodeType : std::underlying_type_t<ibv_node_type> {
-        UNKNOWN = -1,
-        CA = 1,
-        SWITCH,
-        ROUTER,
-        RNIC,
-        USNIC,
-        USNIC_UDP
+        UNKNOWN = IBV_NODE_UNKNOWN,
+        CA = IBV_NODE_CA,
+        SWITCH = IBV_NODE_SWITCH,
+        ROUTER = IBV_NODE_ROUTER,
+        RNIC = IBV_NODE_RNIC,
+        USNIC = IBV_NODE_USNIC,
+        USNIC_UDP = IBV_NODE_USNIC_UDP
     };
 
     enum class TransportType : std::underlying_type_t<ibv_transport_type> {
-        UNKNOWN = -1,
-        IB = 0,
-        IWARP,
-        USNIC,
-        USNIC_UDP
+        UNKNOWN = IBV_TRANSPORT_UNKNOWN,
+        IB = IBV_TRANSPORT_IB,
+        IWARP = IBV_TRANSPORT_IWARP,
+        USNIC = IBV_TRANSPORT_USNIC,
+        USNIC_UDP = IBV_TRANSPORT_USNIC_UDP
     };
 
     enum class AccessFlag : std::underlying_type_t<ibv_access_flags> {
-        LOCAL_WRITE = 1,
-        REMOTE_WRITE = (1 << 1),
-        REMOTE_READ = (1 << 2),
-        REMOTE_ATOMIC = (1 << 3),
-        MW_BIND = (1 << 4),
-        ZERO_BASED = (1 << 5),
-        ON_DEMAND = (1 << 6)
+        LOCAL_WRITE = IBV_ACCESS_LOCAL_WRITE,
+        REMOTE_WRITE = IBV_ACCESS_REMOTE_WRITE,
+        REMOTE_READ = IBV_ACCESS_REMOTE_READ,
+        REMOTE_ATOMIC = IBV_ACCESS_REMOTE_ATOMIC,
+        MW_BIND = IBV_ACCESS_MW_BIND,
+        ZERO_BASED = IBV_ACCESS_ZERO_BASED,
+        ON_DEMAND = IBV_ACCESS_ON_DEMAND
     };
 
     class Gid {
@@ -86,21 +86,21 @@ namespace ibv {
 
     namespace flow {
         enum class Flags : std::underlying_type_t<ibv_flow_flags> {
-            ALLOW_LOOP_BACK = 1 << 0,
-            DONT_TRAP = 1 << 1
+            ALLOW_LOOP_BACK = IBV_FLOW_ATTR_FLAGS_ALLOW_LOOP_BACK,
+            DONT_TRAP = IBV_FLOW_ATTR_FLAGS_DONT_TRAP
         };
 
         enum class AttributeType : std::underlying_type_t<ibv_flow_attr_type> {
-            ORMAL = 0x0,
-            LL_DEFAULT = 0x1,
-            C_DEFAULT = 0x2
+            NORMAL = IBV_FLOW_ATTR_NORMAL,
+            ALL_DEFAULT = IBV_FLOW_ATTR_ALL_DEFAULT,
+            MC_DEFAULT = IBV_FLOW_ATTR_MC_DEFAULT
         };
 
         enum class SpecType : std::underlying_type_t<ibv_flow_spec_type> {
-            ETH = 0x20,
-            IPV4 = 0x30,
-            TCP = 0x40,
-            UDP = 0x41
+            ETH = IBV_FLOW_SPEC_ETH,
+            IPV4 = IBV_FLOW_SPEC_IPV4,
+            TCP = IBV_FLOW_SPEC_TCP,
+            UDP = IBV_FLOW_SPEC_UDP
         };
 
         struct Spec : private ibv_flow_spec {
@@ -145,8 +145,8 @@ namespace ibv {
 
     namespace memorywindow {
         enum class Type : std::underlying_type_t<ibv_mw_type> {
-            TYPE_1 = 1,
-            TYPE_2 = 2
+            TYPE_1 = IBV_MW_TYPE_1,
+            TYPE_2 = IBV_MW_TYPE_2
         };
 
         class BindInfo : ibv_mw_bind_info {
@@ -189,47 +189,47 @@ namespace ibv {
 
     namespace workcompletion {
         enum class Status : std::underlying_type_t<ibv_wc_status> {
-            SUCCESS,
-            LOC_LEN_ERR,
-            LOC_QP_OP_ERR,
-            LOC_EEC_OP_ERR,
-            LOC_PROT_ERR,
-            WR_FLUSH_ERR,
-            MW_BIND_ERR,
-            BAD_RESP_ERR,
-            LOC_ACCESS_ERR,
-            REM_INV_REQ_ERR,
-            REM_ACCESS_ERR,
-            REM_OP_ERR,
-            RETRY_EXC_ERR,
-            RNR_RETRY_EXC_ERR,
-            LOC_RDD_VIOL_ERR,
-            REM_INV_RD_REQ_ERR,
-            REM_ABORT_ERR,
-            INV_EECN_ERR,
-            INV_EEC_STATE_ERR,
-            FATAL_ERR,
-            RESP_TIMEOUT_ERR,
-            GENERAL_ERR
+            SUCCESS = IBV_WC_SUCCESS,
+            LOC_LEN_ERR = IBV_WC_LOC_LEN_ERR,
+            LOC_QP_OP_ERR = IBV_WC_LOC_QP_OP_ERR,
+            LOC_EEC_OP_ERR = IBV_WC_LOC_EEC_OP_ERR,
+            LOC_PROT_ERR = IBV_WC_LOC_PROT_ERR,
+            WR_FLUSH_ERR = IBV_WC_WR_FLUSH_ERR,
+            MW_BIND_ERR = IBV_WC_MW_BIND_ERR,
+            BAD_RESP_ERR = IBV_WC_BAD_RESP_ERR,
+            LOC_ACCESS_ERR = IBV_WC_LOC_ACCESS_ERR,
+            REM_INV_REQ_ERR = IBV_WC_REM_INV_REQ_ERR,
+            REM_ACCESS_ERR = IBV_WC_REM_ACCESS_ERR,
+            REM_OP_ERR = IBV_WC_REM_OP_ERR,
+            RETRY_EXC_ERR = IBV_WC_RETRY_EXC_ERR,
+            RNR_RETRY_EXC_ERR = IBV_WC_RNR_RETRY_EXC_ERR,
+            LOC_RDD_VIOL_ERR = IBV_WC_LOC_RDD_VIOL_ERR,
+            REM_INV_RD_REQ_ERR = IBV_WC_REM_INV_RD_REQ_ERR,
+            REM_ABORT_ERR = IBV_WC_REM_ABORT_ERR,
+            INV_EECN_ERR = IBV_WC_INV_EECN_ERR,
+            INV_EEC_STATE_ERR = IBV_WC_INV_EEC_STATE_ERR,
+            FATAL_ERR = IBV_WC_FATAL_ERR,
+            RESP_TIMEOUT_ERR = IBV_WC_RESP_TIMEOUT_ERR,
+            GENERAL_ERR = IBV_WC_GENERAL_ERR
         };
 
         enum class Opcode : std::underlying_type_t<ibv_wc_opcode> {
-            SEND,
-            RDMA_WRITE,
-            RDMA_READ,
-            COMP_SWAP,
-            FETCH_ADD,
-            BIND_MW,
-            LOCAL_INV,
-            RECV = 1 << 7,
-            RECV_RDMA_WITH_IMM
+            SEND = IBV_WC_SEND,
+            RDMA_WRITE = IBV_WC_RDMA_WRITE,
+            RDMA_READ = IBV_WC_RDMA_READ,
+            COMP_SWAP = IBV_WC_COMP_SWAP,
+            FETCH_ADD = IBV_WC_FETCH_ADD,
+            BIND_MW = IBV_WC_BIND_MW,
+            LOCAL_INV = IBV_WC_LOCAL_INV,
+            RECV = IBV_WC_RECV,
+            RECV_RDMA_WITH_IMM = IBV_WC_RECV_RDMA_WITH_IMM
         };
 
         enum class Flag : std::underlying_type_t<ibv_wc_flags> {
-            GRH = 1 << 0,
-            WITH_IMM = 1 << 1,
-            IP_CSUM_OK = 1 << IBV_WC_IP_CSUM_OK_SHIFT,
-            WITH_INV = 1 << 3
+            GRH = IBV_WC_GRH,
+            WITH_IMM = IBV_WC_WITH_IMM,
+            IP_CSUM_OK = IBV_WC_IP_CSUM_OK,
+            WITH_INV = IBV_WC_WITH_INV
         };
 
         struct WorkCompletion : private ibv_wc {
@@ -332,25 +332,25 @@ namespace ibv {
 
     namespace event {
         enum class Type : std::underlying_type_t<ibv_event_type> {
-            CQ_ERR,
-            QP_FATAL,
-            QP_REQ_ERR,
-            QP_ACCESS_ERR,
-            COMM_EST,
-            SQ_DRAINED,
-            PATH_MIG,
-            PATH_MIG_ERR,
-            DEVICE_FATAL,
-            PORT_ACTIVE,
-            PORT_ERR,
-            LID_CHANGE,
-            PKEY_CHANGE,
-            SM_CHANGE,
-            SRQ_ERR,
-            SRQ_LIMIT_REACHED,
-            QP_LAST_WQE_REACHED,
-            CLIENT_REREGISTER,
-            GID_CHANGE
+            CQ_ERR = IBV_EVENT_CQ_ERR,
+            QP_FATAL = IBV_EVENT_QP_FATAL,
+            QP_REQ_ERR = IBV_EVENT_QP_REQ_ERR,
+            QP_ACCESS_ERR = IBV_EVENT_QP_ACCESS_ERR,
+            COMM_EST = IBV_EVENT_COMM_EST,
+            SQ_DRAINED = IBV_EVENT_SQ_DRAINED,
+            PATH_MIG = IBV_EVENT_PATH_MIG,
+            PATH_MIG_ERR = IBV_EVENT_PATH_MIG_ERR,
+            DEVICE_FATAL = IBV_EVENT_DEVICE_FATAL,
+            PORT_ACTIVE = IBV_EVENT_PORT_ACTIVE,
+            PORT_ERR = IBV_EVENT_PORT_ERR,
+            LID_CHANGE = IBV_EVENT_LID_CHANGE,
+            PKEY_CHANGE = IBV_EVENT_PKEY_CHANGE,
+            SM_CHANGE = IBV_EVENT_SM_CHANGE,
+            SRQ_ERR = IBV_EVENT_SRQ_ERR,
+            SRQ_LIMIT_REACHED = IBV_EVENT_SRQ_LIMIT_REACHED,
+            QP_LAST_WQE_REACHED = IBV_EVENT_QP_LAST_WQE_REACHED,
+            CLIENT_REREGISTER = IBV_EVENT_CLIENT_REREGISTER,
+            GID_CHANGE = IBV_EVENT_GID_CHANGE
         };
 
         struct AsyncEvent : private ibv_async_event {
@@ -432,47 +432,47 @@ namespace ibv {
     } // namespace completions
 
     enum class Mtu : std::underlying_type_t<ibv_mtu> {
-        _256 = 1,
-        _512 = 2,
-        _1024 = 3,
-        _4096 = 5,
-        _2048 = 4
+        _256 = IBV_MTU_256,
+        _512 = IBV_MTU_512,
+        _1024 = IBV_MTU_1024,
+        _2048 = IBV_MTU_2048,
+        _4096 = IBV_MTU_4096
     };
 
     namespace port {
         enum class State : std::underlying_type_t<ibv_port_state> {
-            NOP = 0,
-            DOWN = 1,
-            INIT = 2,
-            ARMED = 3,
-            ACTIVE = 4,
-            ACTIVE_DEFER = 5
+            NOP = IBV_PORT_NOP,
+            DOWN = IBV_PORT_DOWN,
+            INIT = IBV_PORT_INIT,
+            ARMED = IBV_PORT_ARMED,
+            ACTIVE = IBV_PORT_ACTIVE,
+            ACTIVE_DEFER = IBV_PORT_ACTIVE_DEFER
         };
 
         enum class CapabilityFlag : std::underlying_type_t<ibv_port_cap_flags> {
-            SM = 1 << 1,
-            NOTICE_SUP = 1 << 2,
-            TRAP_SUP = 1 << 3,
-            OPT_IPD_SUP = 1 << 4,
-            AUTO_MIGR_SUP = 1 << 5,
-            SL_MAP_SUP = 1 << 6,
-            MKEY_NVRAM = 1 << 7,
-            PKEY_NVRAM = 1 << 8,
-            LED_INFO_SUP = 1 << 9,
-            SYS_IMAGE_GUID_SUP = 1 << 11,
-            PKEY_SW_EXT_PORT_TRAP_SUP = 1 << 12,
-            EXTENDED_SPEEDS_SUP = 1 << 14,
-            CM_SUP = 1 << 16,
-            SNMP_TUNNEL_SUP = 1 << 17,
-            REINIT_SUP = 1 << 18,
-            DEVICE_MGMT_SUP = 1 << 19,
-            VENDOR_CLASS_SUP = 1 << 20,
-            DR_NOTICE_SUP = 1 << 21,
-            CAP_MASK_NOTICE_SUP = 1 << 22,
-            BOOT_MGMT_SUP = 1 << 23,
-            LINK_LATENCY_SUP = 1 << 24,
-            CLIENT_REG_SUP = 1 << 25,
-            IP_BASED_GIDS = 1 << 26
+            SM = IBV_PORT_SM,
+            NOTICE_SUP = IBV_PORT_NOTICE_SUP,
+            TRAP_SUP = IBV_PORT_TRAP_SUP,
+            OPT_IPD_SUP = IBV_PORT_OPT_IPD_SUP,
+            AUTO_MIGR_SUP = IBV_PORT_AUTO_MIGR_SUP,
+            SL_MAP_SUP = IBV_PORT_SL_MAP_SUP,
+            MKEY_NVRAM = IBV_PORT_MKEY_NVRAM,
+            PKEY_NVRAM = IBV_PORT_PKEY_NVRAM,
+            LED_INFO_SUP = IBV_PORT_LED_INFO_SUP,
+            SYS_IMAGE_GUID_SUP = IBV_PORT_SYS_IMAGE_GUID_SUP,
+            PKEY_SW_EXT_PORT_TRAP_SUP = IBV_PORT_PKEY_SW_EXT_PORT_TRAP_SUP,
+            EXTENDED_SPEEDS_SUP = IBV_PORT_EXTENDED_SPEEDS_SUP,
+            CM_SUP = IBV_PORT_CM_SUP,
+            SNMP_TUNNEL_SUP = IBV_PORT_SNMP_TUNNEL_SUP,
+            REINIT_SUP = IBV_PORT_REINIT_SUP,
+            DEVICE_MGMT_SUP = IBV_PORT_DEVICE_MGMT_SUP,
+            VENDOR_CLASS_SUP = IBV_PORT_VENDOR_CLASS_SUP,
+            DR_NOTICE_SUP = IBV_PORT_DR_NOTICE_SUP,
+            CAP_MASK_NOTICE_SUP = IBV_PORT_CAP_MASK_NOTICE_SUP,
+            BOOT_MGMT_SUP = IBV_PORT_BOOT_MGMT_SUP,
+            LINK_LATENCY_SUP = IBV_PORT_LINK_LATENCY_SUP,
+            CLIENT_REG_SUP = IBV_PORT_CLIENT_REG_SUP,
+            IP_BASED_GIDS = IBV_PORT_IP_BASED_GIDS
         };
 
         struct Attributes : private ibv_port_attr {
@@ -561,36 +561,36 @@ namespace ibv {
 
     namespace device {
         enum class CapabilityFlag : std::underlying_type_t<ibv_device_cap_flags> {
-            RESIZE_MAX_WR = 1,
-            BAD_PKEY_CNTR = 1 << 1,
-            BAD_QKEY_CNTR = 1 << 2,
-            RAW_MULTI = 1 << 3,
-            AUTO_PATH_MIG = 1 << 4,
-            CHANGE_PHY_PORT = 1 << 5,
-            UD_AV_PORT_ENFORCE = 1 << 6,
-            CURR_QP_STATE_MOD = 1 << 7,
-            SHUTDOWN_PORT = 1 << 8,
-            INIT_TYPE = 1 << 9,
-            PORT_ACTIVE_EVENT = 1 << 10,
-            SYS_IMAGE_GUID = 1 << 11,
-            RC_RNR_NAK_GEN = 1 << 12,
-            SRQ_RESIZE = 1 << 13,
-            N_NOTIFY_CQ = 1 << 14,
-            MEM_WINDOW = 1 << 17,
-            UD_IP_CSUM = 1 << 18,
-            XRC = 1 << 20,
-            MEM_MGT_EXTENSIONS = 1 << 21,
-            MEM_WINDOW_TYPE_2A = 1 << 23,
-            MEM_WINDOW_TYPE_2B = 1 << 24,
-            RC_IP_CSUM = 1 << 25,
-            RAW_IP_CSUM = 1 << 26,
-            MANAGED_FLOW_STEERING = 1 << 29
+            RESIZE_MAX_WR = IBV_DEVICE_RESIZE_MAX_WR,
+            BAD_PKEY_CNTR = IBV_DEVICE_BAD_PKEY_CNTR,
+            BAD_QKEY_CNTR = IBV_DEVICE_BAD_QKEY_CNTR,
+            RAW_MULTI = IBV_DEVICE_RAW_MULTI,
+            AUTO_PATH_MIG = IBV_DEVICE_AUTO_PATH_MIG,
+            CHANGE_PHY_PORT = IBV_DEVICE_CHANGE_PHY_PORT,
+            UD_AV_PORT_ENFORCE = IBV_DEVICE_UD_AV_PORT_ENFORCE,
+            CURR_QP_STATE_MOD = IBV_DEVICE_CURR_QP_STATE_MOD,
+            SHUTDOWN_PORT = IBV_DEVICE_SHUTDOWN_PORT,
+            INIT_TYPE = IBV_DEVICE_INIT_TYPE,
+            PORT_ACTIVE_EVENT = IBV_DEVICE_PORT_ACTIVE_EVENT,
+            SYS_IMAGE_GUID = IBV_DEVICE_SYS_IMAGE_GUID,
+            RC_RNR_NAK_GEN = IBV_DEVICE_RC_RNR_NAK_GEN,
+            SRQ_RESIZE = IBV_DEVICE_SRQ_RESIZE,
+            N_NOTIFY_CQ = IBV_DEVICE_N_NOTIFY_CQ,
+            MEM_WINDOW = IBV_DEVICE_MEM_WINDOW,
+            UD_IP_CSUM = IBV_DEVICE_UD_IP_CSUM,
+            XRC = IBV_DEVICE_XRC,
+            MEM_MGT_EXTENSIONS = IBV_DEVICE_MEM_MGT_EXTENSIONS,
+            MEM_WINDOW_TYPE_2A = IBV_DEVICE_MEM_WINDOW_TYPE_2A,
+            MEM_WINDOW_TYPE_2B = IBV_DEVICE_MEM_WINDOW_TYPE_2B,
+            RC_IP_CSUM = IBV_DEVICE_RC_IP_CSUM,
+            RAW_IP_CSUM = IBV_DEVICE_RAW_IP_CSUM,
+            MANAGED_FLOW_STEERING = IBV_DEVICE_MANAGED_FLOW_STEERING
         };
 
         enum class AtomicCapabilities : std::underlying_type_t<ibv_atomic_cap> {
-            NONE,
-            HCA,
-            GLOB
+            NONE = IBV_ATOMIC_NONE,
+            HCA = IBV_ATOMIC_HCA,
+            GLOB = IBV_ATOMIC_GLOB
         };
 
         struct Attributes : private ibv_device_attr {
@@ -814,19 +814,19 @@ namespace ibv {
 
     namespace memoryregion {
         enum class ReregFlag : std::underlying_type_t<ibv_rereg_mr_flags> {
-            CHANGE_TRANSLATION = (1 << 0),
-            CHANGE_PD = (1 << 1),
-            CHANGE_ACCESS = (1 << 2),
-            KEEP_VALID = (1 << 3),
-            FLAGS_SUPPORTED = ((KEEP_VALID << 1) - 1)
+            CHANGE_TRANSLATION = IBV_REREG_MR_CHANGE_TRANSLATION,
+            CHANGE_PD = IBV_REREG_MR_CHANGE_PD,
+            CHANGE_ACCESS = IBV_REREG_MR_CHANGE_ACCESS,
+            KEEP_VALID = IBV_REREG_MR_KEEP_VALID,
+            FLAGS_SUPPORTED = IBV_REREG_MR_FLAGS_SUPPORTED
         };
 
         enum class ReregErrorCode : std::underlying_type_t<ibv_rereg_mr_err_code> {
-            INPUT = -1,
-            DONT_FORK_NEW = -2,
-            DO_FORK_OLD = -3,
-            CMD = -4,
-            CMD_AND_DO_FORK_NEW = -5
+            INPUT = IBV_REREG_MR_ERR_INPUT,
+            DONT_FORK_NEW = IBV_REREG_MR_ERR_DONT_FORK_NEW,
+            DO_FORK_OLD = IBV_REREG_MR_ERR_DO_FORK_OLD,
+            CMD = IBV_REREG_MR_ERR_CMD,
+            CMD_AND_DO_FORK_NEW = IBV_REREG_MR_ERR_CMD_AND_DO_FORK_NEW
         };
 
         struct Slice : public ibv_sge {
@@ -904,24 +904,24 @@ namespace ibv {
     namespace workrequest {
         // internal
         enum class Opcode : std::underlying_type_t<ibv_wr_opcode> {
-            RDMA_WRITE,
-            RDMA_WRITE_WITH_IMM,
-            SEND,
-            SEND_WITH_IMM,
-            RDMA_READ,
-            ATOMIC_CMP_AND_SWP,
-            ATOMIC_FETCH_AND_ADD,
-            LOCAL_INV,
-            BIND_MW,
-            SEND_WITH_INV
+            RDMA_WRITE = IBV_WR_RDMA_WRITE,
+            RDMA_WRITE_WITH_IMM = IBV_WR_RDMA_WRITE_WITH_IMM,
+            SEND = IBV_WR_SEND,
+            SEND_WITH_IMM = IBV_WR_SEND_WITH_IMM,
+            RDMA_READ = IBV_WR_RDMA_READ,
+            ATOMIC_CMP_AND_SWP = IBV_WR_ATOMIC_CMP_AND_SWP,
+            ATOMIC_FETCH_AND_ADD = IBV_WR_ATOMIC_FETCH_AND_ADD,
+            LOCAL_INV = IBV_WR_LOCAL_INV,
+            BIND_MW = IBV_WR_BIND_MW,
+            SEND_WITH_INV = IBV_WR_SEND_WITH_INV,
         };
 
         enum class Flags : std::underlying_type_t<ibv_send_flags> {
-            FENCE = 1 << 0,
-            SIGNALED = 1 << 1,
-            SOLICITED = 1 << 2,
-            INLINE = 1 << 3,
-            IP_CSUM = 1 << 4
+            FENCE = IBV_SEND_FENCE,
+            SIGNALED = IBV_SEND_SIGNALED,
+            SOLICITED = IBV_SEND_SOLICITED,
+            INLINE = IBV_SEND_INLINE,
+            IP_CSUM = IBV_SEND_IP_CSUM
         };
 
         struct SendWr : private ibv_send_wr {
@@ -1084,21 +1084,21 @@ namespace ibv {
 
     namespace srq {
         enum class AttributeMask : std::underlying_type_t<ibv_srq_attr_mask> {
-            MAX_WR = 1 << 0,
-            LIMIT = 1 << 1
+            MAX_WR = IBV_SRQ_MAX_WR,
+            LIMIT = IBV_SRQ_LIMIT
         };
 
         enum class Type : std::underlying_type_t<ibv_srq_type> {
-            BASIC,
-            XRC
+            BASIC = IBV_SRQT_BASIC,
+            XRC = IBV_SRQT_XRC
         };
 
         enum class InitAttributeMask : std::underlying_type_t<ibv_srq_init_attr_mask> {
-            TYPE = 1 << 0,
-            PD = 1 << 1,
-            XRCD = 1 << 2,
-            CQ = 1 << 3,
-            RESERVED = 1 << 4
+            TYPE = IBV_SRQ_INIT_ATTR_TYPE,
+            PD = IBV_SRQ_INIT_ATTR_PD,
+            XRCD = IBV_SRQ_INIT_ATTR_XRCD,
+            CQ = IBV_SRQ_INIT_ATTR_CQ,
+            RESERVED = IBV_SRQ_INIT_ATTR_RESERVED
         };
 
         struct Attributes : private ibv_srq_attr {
@@ -1161,9 +1161,9 @@ namespace ibv {
 
     namespace xrcd {
         enum class InitAttributesMask : std::underlying_type_t<ibv_xrcd_init_attr_mask> {
-            FD = 1 << 0,
-            OFLAGS = 1 << 1,
-            RESERVED = 1 << 2
+            FD = IBV_XRCD_INIT_ATTR_FD,
+            OFLAGS = IBV_XRCD_INIT_ATTR_OFLAGS,
+            RESERVED = IBV_XRCD_INIT_ATTR_RESERVED
         };
 
         enum class OpenFlags : int {
@@ -1205,73 +1205,73 @@ namespace ibv {
 
     namespace queuepair {
         enum class Type : std::underlying_type_t<ibv_qp_type> {
-            RC = 2,
-            UC,
-            UD,
-            RAW_PACKET = 8,
-            XRC_SEND = 9,
-            XRC_RECV
+            RC = IBV_QPT_RC,
+            UC = IBV_QPT_UC,
+            UD = IBV_QPT_UD,
+            RAW_PACKET = IBV_QPT_RAW_PACKET,
+            XRC_SEND = IBV_QPT_XRC_SEND,
+            XRC_RECV = IBV_QPT_XRC_RECV
         };
 
         enum class InitAttrMask : std::underlying_type_t<ibv_qp_init_attr_mask> {
-            PD = 1 << 0,
-            XRCD = 1 << 1,
-            CREATE_FLAGS = 1 << 2,
-            RESERVED = 1 << 3
+            PD = IBV_QP_INIT_ATTR_PD,
+            XRCD = IBV_QP_INIT_ATTR_XRCD,
+            CREATE_FLAGS = IBV_QP_INIT_ATTR_CREATE_FLAGS,
+            RESERVED = IBV_QP_INIT_ATTR_RESERVED
         };
 
         enum class CreateFlags : std::underlying_type_t<ibv_qp_create_flags> {
-            BLOCK_SELF_MCAST_LB = 1 << 1,
-            SCATTER_FCS = 1 << 8
+            BLOCK_SELF_MCAST_LB = IBV_QP_CREATE_BLOCK_SELF_MCAST_LB,
+            SCATTER_FCS = IBV_QP_CREATE_SCATTER_FCS
         };
 
         enum class OpenAttrMask : std::underlying_type_t<ibv_qp_open_attr_mask> {
-            NUM = 1 << 0,
-            XRCD = 1 << 1,
-            CONTEXT = 1 << 2,
-            TYPE = 1 << 3,
-            RESERVED = 1 << 4
+            NUM = IBV_QP_OPEN_ATTR_NUM,
+            XRCD = IBV_QP_OPEN_ATTR_XRCD,
+            CONTEXT = IBV_QP_OPEN_ATTR_CONTEXT,
+            TYPE = IBV_QP_OPEN_ATTR_TYPE,
+            RESERVED = IBV_QP_OPEN_ATTR_RESERVED
         };
 
         enum class AttrMask : std::underlying_type_t<ibv_qp_attr_mask> {
-            STATE = 1 << 0,
-            CUR_STATE = 1 << 1,
-            EN_SQD_ASYNC_NOTIFY = 1 << 2,
-            ACCESS_FLAGS = 1 << 3,
-            PKEY_INDEX = 1 << 4,
-            PORT = 1 << 5,
-            QKEY = 1 << 6,
-            AV = 1 << 7,
-            PATH_MTU = 1 << 8,
-            TIMEOUT = 1 << 9,
-            RETRY_CNT = 1 << 10,
-            RNR_RETRY = 1 << 11,
-            RQ_PSN = 1 << 12,
-            MAX_QP_RD_ATOMIC = 1 << 13,
-            ALT_PATH = 1 << 14,
-            MIN_RNR_TIMER = 1 << 15,
-            SQ_PSN = 1 << 16,
-            MAX_DEST_RD_ATOMIC = 1 << 17,
-            PATH_MIG_STATE = 1 << 18,
-            CAP = 1 << 19,
-            DEST_QPN = 1 << 20
+            STATE = IBV_QP_STATE,
+            CUR_STATE = IBV_QP_CUR_STATE,
+            EN_SQD_ASYNC_NOTIFY = IBV_QP_EN_SQD_ASYNC_NOTIFY,
+            ACCESS_FLAGS = IBV_QP_ACCESS_FLAGS,
+            PKEY_INDEX = IBV_QP_PKEY_INDEX,
+            PORT = IBV_QP_PORT,
+            QKEY = IBV_QP_QKEY,
+            AV = IBV_QP_AV,
+            PATH_MTU = IBV_QP_PATH_MTU,
+            TIMEOUT = IBV_QP_TIMEOUT,
+            RETRY_CNT = IBV_QP_RETRY_CNT,
+            RNR_RETRY = IBV_QP_RNR_RETRY,
+            RQ_PSN = IBV_QP_RQ_PSN,
+            MAX_QP_RD_ATOMIC = IBV_QP_MAX_QP_RD_ATOMIC,
+            ALT_PATH = IBV_QP_ALT_PATH,
+            MIN_RNR_TIMER = IBV_QP_MIN_RNR_TIMER,
+            SQ_PSN = IBV_QP_SQ_PSN,
+            MAX_DEST_RD_ATOMIC = IBV_QP_MAX_DEST_RD_ATOMIC,
+            PATH_MIG_STATE = IBV_QP_PATH_MIG_STATE,
+            CAP = IBV_QP_CAP,
+            DEST_QPN = IBV_QP_DEST_QPN
         };
 
         enum class State : std::underlying_type_t<ibv_qp_state> {
-            RESET,
-            INIT,
-            RTR,
-            RTS,
-            SQD,
-            SQE,
-            ERR,
-            UNKNOWN
+            RESET = IBV_QPS_RESET,
+            INIT = IBV_QPS_INIT,
+            RTR = IBV_QPS_RTR,
+            RTS = IBV_QPS_RTS,
+            SQD = IBV_QPS_SQD,
+            SQE = IBV_QPS_SQE,
+            ERR = IBV_QPS_ERR,
+            UNKNOWN = IBV_QPS_UNKNOWN
         };
 
         enum class MigrationState : std::underlying_type_t<ibv_mig_state> {
-            MIGRATED,
-            REARM,
-            ARMED
+            MIGRATED = IBV_MIG_MIGRATED,
+            REARM = IBV_MIG_REARM,
+            ARMED = IBV_MIG_ARMED
         };
 
         struct Capabilities : public ibv_qp_cap {
