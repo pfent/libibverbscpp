@@ -357,41 +357,6 @@ namespace ibv {
         }
     } // namespace workcompletion
 
-    namespace event {
-        enum class Type : std::underlying_type_t<ibv_event_type> {
-            CQ_ERR = IBV_EVENT_CQ_ERR,
-            QP_FATAL = IBV_EVENT_QP_FATAL,
-            QP_REQ_ERR = IBV_EVENT_QP_REQ_ERR,
-            QP_ACCESS_ERR = IBV_EVENT_QP_ACCESS_ERR,
-            COMM_EST = IBV_EVENT_COMM_EST,
-            SQ_DRAINED = IBV_EVENT_SQ_DRAINED,
-            PATH_MIG = IBV_EVENT_PATH_MIG,
-            PATH_MIG_ERR = IBV_EVENT_PATH_MIG_ERR,
-            DEVICE_FATAL = IBV_EVENT_DEVICE_FATAL,
-            PORT_ACTIVE = IBV_EVENT_PORT_ACTIVE,
-            PORT_ERR = IBV_EVENT_PORT_ERR,
-            LID_CHANGE = IBV_EVENT_LID_CHANGE,
-            PKEY_CHANGE = IBV_EVENT_PKEY_CHANGE,
-            SM_CHANGE = IBV_EVENT_SM_CHANGE,
-            SRQ_ERR = IBV_EVENT_SRQ_ERR,
-            SRQ_LIMIT_REACHED = IBV_EVENT_SRQ_LIMIT_REACHED,
-            QP_LAST_WQE_REACHED = IBV_EVENT_QP_LAST_WQE_REACHED,
-            CLIENT_REREGISTER = IBV_EVENT_CLIENT_REREGISTER,
-            GID_CHANGE = IBV_EVENT_GID_CHANGE
-        };
-
-        struct AsyncEvent : private ibv_async_event {
-            Type getType() const {
-                return static_cast<Type>(event_type);
-            }
-
-            void ack() {
-                ibv_ack_async_event(this);
-            }
-        };
-        // TODO: different events
-    } // namespace event
-
     namespace ah {
         struct Attributes : private ibv_ah_attr {
             // TODO
@@ -1688,6 +1653,104 @@ namespace ibv {
             }
         };
     } // namespace queuepair
+
+    namespace event {
+        enum class Type : std::underlying_type_t<ibv_event_type> {
+            CQ_ERR = IBV_EVENT_CQ_ERR,
+            QP_FATAL = IBV_EVENT_QP_FATAL,
+            QP_REQ_ERR = IBV_EVENT_QP_REQ_ERR,
+            QP_ACCESS_ERR = IBV_EVENT_QP_ACCESS_ERR,
+            COMM_EST = IBV_EVENT_COMM_EST,
+            SQ_DRAINED = IBV_EVENT_SQ_DRAINED,
+            PATH_MIG = IBV_EVENT_PATH_MIG,
+            PATH_MIG_ERR = IBV_EVENT_PATH_MIG_ERR,
+            DEVICE_FATAL = IBV_EVENT_DEVICE_FATAL,
+            PORT_ACTIVE = IBV_EVENT_PORT_ACTIVE,
+            PORT_ERR = IBV_EVENT_PORT_ERR,
+            LID_CHANGE = IBV_EVENT_LID_CHANGE,
+            PKEY_CHANGE = IBV_EVENT_PKEY_CHANGE,
+            SM_CHANGE = IBV_EVENT_SM_CHANGE,
+            SRQ_ERR = IBV_EVENT_SRQ_ERR,
+            SRQ_LIMIT_REACHED = IBV_EVENT_SRQ_LIMIT_REACHED,
+            QP_LAST_WQE_REACHED = IBV_EVENT_QP_LAST_WQE_REACHED,
+            CLIENT_REREGISTER = IBV_EVENT_CLIENT_REREGISTER,
+            GID_CHANGE = IBV_EVENT_GID_CHANGE
+        };
+
+        enum class Cause {
+            QueuePair,
+            CompletionQueue,
+            SharedReceiveQueue,
+            Port,
+            Device
+        };
+
+        struct AsyncEvent : private ibv_async_event {
+            constexpr Type getType() const {
+                return static_cast<Type>(event_type);
+            }
+
+            constexpr Cause getCause() const {
+                switch (getType()) {
+                    case Type::QP_FATAL:
+                    case Type::QP_REQ_ERR:
+                    case Type::QP_ACCESS_ERR:
+                    case Type::COMM_EST:
+                    case Type::SQ_DRAINED:
+                    case Type::PATH_MIG:
+                    case Type::PATH_MIG_ERR:
+                    case Type::QP_LAST_WQE_REACHED:
+                        return Cause::QueuePair;
+                    case Type::CQ_ERR:
+                        return Cause::CompletionQueue;
+                    case Type::SRQ_ERR:
+                    case Type::SRQ_LIMIT_REACHED:
+                        return Cause::SharedReceiveQueue;
+                    case Type::PORT_ACTIVE:
+                    case Type::PORT_ERR:
+                    case Type::LID_CHANGE:
+                    case Type::PKEY_CHANGE:
+                    case Type::SM_CHANGE:
+                    case Type::CLIENT_REREGISTER:
+                    case Type::GID_CHANGE:
+                        return Cause::Port;
+                    case Type::DEVICE_FATAL:
+                        return Cause::Device;
+                }
+            }
+
+            queuepair::QueuePair *getCausingQp() const {
+                checkCause(Cause::QueuePair);
+                return reinterpret_cast<queuepair::QueuePair *>(element.qp);
+            }
+
+            completions::CompletionQueue *getCausingCq() const {
+                checkCause(Cause::CompletionQueue);
+                return reinterpret_cast<completions::CompletionQueue *>(element.cq);
+            }
+
+            srq::SharedReceiveQueue *getCausingSrq() const {
+                checkCause(Cause::SharedReceiveQueue);
+                return reinterpret_cast<srq::SharedReceiveQueue *>(element.srq);
+            }
+
+            constexpr int getCausingPort() const {
+                checkCause(Cause::Port);
+                return element.port_num;
+            }
+
+            void ack() {
+                ibv_ack_async_event(this);
+            }
+
+        private:
+            constexpr void checkCause(Cause cause) const {
+                if (getCause() != cause) {
+                    throw std::logic_error("Invalid event cause accessed");
+                }
+            }
+        };
+    } // namespace event
 
     namespace protectiondomain {
         struct ProtectionDomain : private ibv_pd {
