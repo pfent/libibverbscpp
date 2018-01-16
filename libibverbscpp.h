@@ -1,15 +1,15 @@
 #ifndef LIBIBVERBSCPP_LIBRARY_H
 #define LIBIBVERBSCPP_LIBRARY_H
 
+#include <cassert>
+#include <fcntl.h>
+#include <functional>
 #include <infiniband/verbs.h>
 #include <initializer_list>
-#include <type_traits>
-#include <functional>
-#include <cassert>
+#include <iostream>
 #include <memory>
 #include <sstream>
-#include <iostream>
-#include <fcntl.h>
+#include <type_traits>
 
 namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
@@ -42,7 +42,7 @@ namespace ibv {
                 std::clog << function << " failed with error " << std::to_string(status) << ": " << strerror(status);
             }
         }
-    }
+    } // namespace
 
     enum class NodeType : std::underlying_type_t<ibv_node_type> {
         UNKNOWN = -1,
@@ -133,15 +133,15 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_flow", status);
             }
         };
-    }
+    } // namespace flow
 
     namespace context {
         struct Context;
-    }
+    } // namespace context
 
     namespace protectiondomain {
         struct ProtectionDomain;
-    }
+    } // namespace protectiondomain
 
     namespace memorywindow {
         enum class Type : std::underlying_type_t<ibv_mw_type> {
@@ -154,7 +154,7 @@ namespace ibv {
         };
 
         class Bind : ibv_mw_bind {
-            // TODO:
+            // TODO
         };
 
         struct MemoryWindow : private ibv_mw {
@@ -185,7 +185,7 @@ namespace ibv {
                 return static_cast<Type>(type);
             }
         };
-    }
+    } // namespace memorywindow
 
     namespace workcompletion {
         enum class Status : std::underlying_type_t<ibv_wc_status> {
@@ -328,7 +328,7 @@ namespace ibv {
         inline std::string to_string(Status status) {
             return ibv_wc_status_str(static_cast<ibv_wc_status>(status));
         }
-    }
+    } // namespace workcompletion
 
     namespace event {
         enum class Type : std::underlying_type_t<ibv_event_type> {
@@ -362,7 +362,7 @@ namespace ibv {
                 ibv_ack_async_event(this);
             }
         };
-    }
+    } // namespace event
 
     namespace ah {
         struct Attributes : private ibv_ah_attr {
@@ -376,7 +376,7 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_ah", status);
             }
         };
-    }
+    } // namespace ah
 
     namespace completions {
         struct CompletionQueue : private ibv_cq {
@@ -405,7 +405,7 @@ namespace ibv {
             }
 
             void requestNotify(bool solicitedOnly) {
-                const auto status = ibv_req_notify_cq(this, solicitedOnly);
+                const auto status = ibv_req_notify_cq(this, static_cast<int>(solicitedOnly));
                 checkStatus("ibv_req_notify_cq", status);
             }
         };
@@ -429,7 +429,7 @@ namespace ibv {
 
         struct PollAttributes : private ibv_poll_cq_attr {
         };
-    }
+    } // namespace completions
 
     enum class Mtu : std::underlying_type_t<ibv_mtu> {
         _256 = 1,
@@ -557,7 +557,7 @@ namespace ibv {
                 return link_layer;
             }
         };
-    }
+    } // namespace port
 
     namespace device {
         enum class CapabilityFlag : std::underlying_type_t<ibv_device_cap_flags> {
@@ -810,7 +810,7 @@ namespace ibv {
                 return devices[idx];
             }
         };
-    }
+    }  // namespace device
 
     namespace memoryregion {
         enum class ReregFlag : std::underlying_type_t<ibv_rereg_mr_flags> {
@@ -878,8 +878,7 @@ namespace ibv {
 
             ReregErrorCode
             reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain &newPd,
-                       void *newAddr,
-                       size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
+                       void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
                 int changes = 0;
                 for (auto change : changeFlags) {
                     changes |= static_cast<ibv_rereg_mr_flags>(change);
@@ -900,7 +899,7 @@ namespace ibv {
             addr << std::hex << mr.getAddr();
             return std::string("ptr=") + addr.str() + " size=" + std::to_string(mr.getLength()) + " key={..}";
         }
-    }
+    } // namespace memoryregion
 
     namespace workrequest {
         // internal
@@ -973,13 +972,13 @@ namespace ibv {
         };
 
         struct Write : Rdma {
-            Write() : Rdma{} {
+            Write() {
                 SendWr::setOpcode(Opcode::RDMA_WRITE);
             }
         };
 
         struct WriteWithImm : Write {
-            WriteWithImm() : Write{} {
+            WriteWithImm() {
                 WriteWithImm::setOpcode(Opcode::RDMA_WRITE_WITH_IMM);
             }
 
@@ -987,13 +986,13 @@ namespace ibv {
         };
 
         struct Send : SendWr {
-            Send() : SendWr{} {
+            Send() {
                 SendWr::setOpcode(Opcode::SEND);
             }
         };
 
         struct SendWithImm : SendWr {
-            SendWithImm() : SendWr{} {
+            SendWithImm() {
                 SendWr::setOpcode(Opcode::SEND_WITH_IMM);
             }
 
@@ -1001,7 +1000,7 @@ namespace ibv {
         };
 
         struct Read : Rdma {
-            Read() : Rdma{} {
+            Read() {
                 SendWr::setOpcode(Opcode::RDMA_READ);
             }
         };
@@ -1015,7 +1014,7 @@ namespace ibv {
         };
 
         struct AtomicCompareSwap : Atomic {
-            AtomicCompareSwap() : Atomic{} {
+            AtomicCompareSwap() {
                 SendWr::setOpcode(Opcode::ATOMIC_CMP_AND_SWP);
             }
 
@@ -1034,7 +1033,7 @@ namespace ibv {
         };
 
         struct AtomicFetchAdd : Atomic {
-            AtomicFetchAdd() : Atomic{} {
+            AtomicFetchAdd() {
                 SendWr::setOpcode(Opcode::ATOMIC_FETCH_AND_ADD);
             }
 
@@ -1081,7 +1080,7 @@ namespace ibv {
                 slice = sge;
             }
         };
-    }
+    } // namespace workrequest
 
     namespace srq {
         enum class AttributeMask : std::underlying_type_t<ibv_srq_attr_mask> {
@@ -1158,7 +1157,7 @@ namespace ibv {
                 checkStatus("ibv_post_srq_recv", status);
             }
         };
-    }
+    } // namespace srq
 
     namespace xrcd {
         enum class InitAttributesMask : std::underlying_type_t<ibv_xrcd_init_attr_mask> {
@@ -1202,7 +1201,7 @@ namespace ibv {
                 checkStatusNoThrow("ibv_close_xrcd", status);
             }
         };
-    }
+    } // namespace xrcd
 
     namespace queuepair {
         enum class Type : std::underlying_type_t<ibv_qp_type> {
@@ -1560,7 +1559,7 @@ namespace ibv {
             }
 
             void setSignalAll(bool shouldSignal) {
-                sq_sig_all = shouldSignal;
+                sq_sig_all = static_cast<int>(shouldSignal);
             }
         };
 
@@ -1634,7 +1633,7 @@ namespace ibv {
                 checkStatus("ibv_detach_mcast", status);
             }
         };
-    }
+    } // namespace queuepair
 
     namespace protectiondomain {
         struct ProtectionDomain : private ibv_pd {
@@ -1703,7 +1702,7 @@ namespace ibv {
                 return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
             }
         };
-    }
+    } // namespace protectiondomain
 
     namespace context {
         struct Context : private ibv_context {
@@ -1805,7 +1804,7 @@ namespace ibv {
                 return attributes;
             }
         };
-    }
+    } // namespace context
 
     inline uint32_t incRkey(uint32_t rkey) {
         return ibv_inc_rkey(rkey);
@@ -1815,5 +1814,5 @@ namespace ibv {
         const auto status = ibv_fork_init();
         checkStatus("ibv_fork_init", status);
     }
-}
+} // namespace ibv
 #endif
