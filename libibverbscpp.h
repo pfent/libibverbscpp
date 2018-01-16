@@ -360,7 +360,7 @@ namespace ibv {
             }
         };
 
-        constexpr std::string_view to_string(Opcode opcode) {
+        inline std::string to_string(Opcode opcode) {
             switch (opcode) {
                 case Opcode::SEND:
                     return "IBV_WC_SEND";
