@@ -109,6 +109,28 @@ namespace ibv {
         }
     };
 
+    struct GlobalRoute : private ibv_global_route {
+        const Gid &getDgid() const {
+            return *reinterpret_cast<const Gid *>(&dgid);
+        }
+
+        uint32_t getFlowLabel() const {
+            return flow_label;
+        }
+
+        uint8_t getSgidIndex() const {
+            return sgid_index;
+        }
+
+        uint8_t getHopLimit() const {
+            return hop_limit;
+        }
+
+        uint8_t getTrafficClass() const {
+            return traffic_class;
+        }
+    };
+
     namespace flow {
         enum class Flags : std::underlying_type_t<ibv_flow_flags> {
             ALLOW_LOOP_BACK = IBV_FLOW_ATTR_FLAGS_ALLOW_LOOP_BACK,
@@ -370,7 +392,62 @@ namespace ibv {
     namespace ah {
         struct Attributes : private ibv_ah_attr {
             friend struct queuepair::Attributes;
-            // TODO
+
+            const GlobalRoute &getGrh() const {
+                return *reinterpret_cast<const GlobalRoute *>(&grh);
+            }
+
+            constexpr void setGrh(const GlobalRoute &grh) {
+                this->grh = *reinterpret_cast<const ibv_global_route *>(&grh);
+            }
+
+            constexpr uint16_t getDlid() const {
+                return dlid;
+            }
+
+            constexpr void setDlid(uint16_t dlid) {
+                this->dlid = dlid;
+            }
+
+            constexpr uint8_t getSl() const {
+                return sl;
+            }
+
+            constexpr void setSl(uint8_t sl) {
+                this->sl = sl;
+            }
+
+            constexpr uint8_t getSrc_path_bits() const {
+                return src_path_bits;
+            }
+
+            constexpr void setSrc_path_bits(uint8_t src_path_bits) {
+                this->src_path_bits = src_path_bits;
+            }
+
+            constexpr uint8_t getStatic_rate() const {
+                return static_rate;
+            }
+
+            constexpr void setStatic_rate(uint8_t static_rate) {
+                this->static_rate = static_rate;
+            }
+
+            constexpr uint8_t getIs_global() const {
+                return is_global;
+            }
+
+            constexpr void setIs_global(uint8_t is_global) {
+                this->is_global = is_global;
+            }
+
+            constexpr uint8_t getPort_num() const {
+                return port_num;
+            }
+
+            constexpr void setPort_num(uint8_t port_num) {
+                this->port_num = port_num;
+            }
         };
 
         struct AddressHandle : private ibv_ah {
