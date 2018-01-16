@@ -522,6 +522,22 @@ namespace ibv {
         _4096 = IBV_MTU_4096
     };
 
+    inline std::string to_string(Mtu mtu) {
+        switch (mtu) {
+            case Mtu::_256:
+                return "IBV_MTU_256";
+            case Mtu::_512:
+                return "IBV_MTU_512";
+            case Mtu::_1024:
+                return "IBV_MTU_1024";
+            case Mtu::_2048:
+                return "IBV_MTU_2048";
+            case Mtu::_4096:
+                return "IBV_MTU_4096";
+        }
+        __builtin_unreachable();
+    }
+
     namespace port {
         enum class State : std::underlying_type_t<ibv_port_state> {
             NOP = IBV_PORT_NOP,
@@ -924,6 +940,7 @@ namespace ibv {
                 case ReregErrorCode::CMD_AND_DO_FORK_NEW:
                     return "IBV_REREG_MR_ERR_CMD_AND_DO_FORK_NEW";
             }
+            __builtin_unreachable();
         }
 
         struct Slice : public ibv_sge {
@@ -1394,11 +1411,45 @@ namespace ibv {
             UNKNOWN = IBV_QPS_UNKNOWN
         };
 
+        inline std::string to_string(State state) {
+            switch (state) {
+                case State::RESET:
+                    return "IBV_QPS_RESET";
+                case State::INIT:
+                    return "IBV_QPS_INIT";
+                case State::RTR:
+                    return "IBV_QPS_RTR";
+                case State::RTS:
+                    return "IBV_QPS_RTS";
+                case State::SQD:
+                    return "IBV_QPS_SQD";
+                case State::SQE:
+                    return "IBV_QPS_SQE";
+                case State::ERR:
+                    return "IBV_QPS_ERR";
+                case State::UNKNOWN:
+                    return "IBV_QPS_UNKNOWN";
+            }
+            __builtin_unreachable();
+        }
+
         enum class MigrationState : std::underlying_type_t<ibv_mig_state> {
             MIGRATED = IBV_MIG_MIGRATED,
             REARM = IBV_MIG_REARM,
             ARMED = IBV_MIG_ARMED
         };
+
+        inline std::string to_string(MigrationState ms) {
+            switch (ms) {
+                case MigrationState::MIGRATED:
+                    return " IBV_MIG_MIGRATED";
+                case MigrationState::REARM:
+                    return " IBV_MIG_REARM";
+                case MigrationState::ARMED:
+                    return " IBV_MIG_ARMED";
+            }
+            __builtin_unreachable();
+        }
 
         struct Capabilities : public ibv_qp_cap {
             constexpr uint32_t getMaxSendWr() const {
@@ -1721,6 +1772,26 @@ namespace ibv {
                 }
                 const auto status = ibv_query_qp(this, &attr, mask, &init_attr);
                 checkStatus("ibv_query_qp", status);
+            }
+
+            std::tuple<Attributes, InitAttributes> query(std::initializer_list<AttrMask> queriedAttributes,
+                                                         std::initializer_list<InitAttrMask> queriedInitAttributes) {
+                Attributes attributes;
+                InitAttributes initAttributes;
+                query(attributes, queriedAttributes, initAttributes, queriedInitAttributes);
+                return {attributes, initAttributes};
+            }
+
+            Attributes query(std::initializer_list<AttrMask> queriedAttributes) {
+                auto[attributes, initAttributes] = query(queriedAttributes, {});
+                std::ignore = initAttributes;
+                return attributes;
+            }
+
+            InitAttributes query(std::initializer_list<InitAttrMask> queriedInitAttributes) {
+                auto[attributes, initAttributes] = query({}, queriedInitAttributes);
+                std::ignore = attributes;
+                return initAttributes;
             }
 
             void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr) {
