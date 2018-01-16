@@ -834,6 +834,21 @@ namespace ibv {
             CMD_AND_DO_FORK_NEW = IBV_REREG_MR_ERR_CMD_AND_DO_FORK_NEW
         };
 
+        inline std::string to_string(ReregErrorCode ec) {
+            switch (ec) {
+                case ReregErrorCode::INPUT:
+                    return "IBV_REREG_MR_ERR_INPUT";
+                case ReregErrorCode::DONT_FORK_NEW:
+                    return " IBV_REREG_MR_ERR_DONT_FORK_NEW";
+                case ReregErrorCode::DO_FORK_OLD:
+                    return " IBV_REREG_MR_ERR_DO_FORK_OLD";
+                case ReregErrorCode::CMD:
+                    return "IBV_REREG_MR_ERR_CMD";
+                case ReregErrorCode::CMD_AND_DO_FORK_NEW:
+                    return "IBV_REREG_MR_ERR_CMD_AND_DO_FORK_NEW";
+            }
+        }
+
         struct Slice : public ibv_sge {
         };
 
@@ -881,7 +896,7 @@ namespace ibv {
                 return Slice{{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey}};
             }
 
-            ReregErrorCode
+            void
             reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain &newPd,
                        void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
                 int changes = 0;
@@ -894,8 +909,11 @@ namespace ibv {
                 }
                 const auto status =
                         ibv_rereg_mr(this, changes, reinterpret_cast<ibv_pd *> (&newPd), newAddr, newLength, access);
-                checkStatus("ibv_rereg_mr", status); // TODO: directly throw ReregErrorCode
-                return static_cast<ReregErrorCode>(status);
+
+                if (status != 0) {
+                    const auto res = static_cast<ReregErrorCode>(status);
+                    throw std::runtime_error("ibv_rereg_mr failed with: " + to_string(res));
+                }
             }
         };
 
