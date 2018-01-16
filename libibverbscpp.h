@@ -417,35 +417,35 @@ namespace ibv {
                 this->sl = sl;
             }
 
-            constexpr uint8_t getSrc_path_bits() const {
+            constexpr uint8_t getSrcPathBits() const {
                 return src_path_bits;
             }
 
-            constexpr void setSrc_path_bits(uint8_t src_path_bits) {
+            constexpr void setSrcPathBits(uint8_t src_path_bits) {
                 this->src_path_bits = src_path_bits;
             }
 
-            constexpr uint8_t getStatic_rate() const {
+            constexpr uint8_t getStaticRate() const {
                 return static_rate;
             }
 
-            constexpr void setStatic_rate(uint8_t static_rate) {
+            constexpr void setStaticRate(uint8_t static_rate) {
                 this->static_rate = static_rate;
             }
 
-            constexpr uint8_t getIs_global() const {
-                return is_global;
+            constexpr bool getIsGlobal() const {
+                return static_cast<bool>(is_global);
             }
 
-            constexpr void setIs_global(uint8_t is_global) {
-                this->is_global = is_global;
+            constexpr void setIsGlobal(bool is_global) {
+                this->is_global = static_cast<uint8_t>(is_global);
             }
 
-            constexpr uint8_t getPort_num() const {
+            constexpr uint8_t getPortNum() const {
                 return port_num;
             }
 
-            constexpr void setPort_num(uint8_t port_num) {
+            constexpr void setPortNum(uint8_t port_num) {
                 this->port_num = port_num;
             }
         };
