@@ -269,7 +269,7 @@ namespace ibv {
             };
         };
 
-        std::string to_string(Opcode opcode) {
+        inline std::string to_string(Opcode opcode) {
             switch (opcode) {
                 case Opcode::SEND:
                     return "IBV_WC_SEND";
@@ -293,7 +293,7 @@ namespace ibv {
             __builtin_unreachable();
         }
 
-        std::string to_string(Status status) {
+        inline std::string to_string(Status status) {
             return ibv_wc_status_str(static_cast<ibv_wc_status>(status));
         }
     }
@@ -863,7 +863,7 @@ namespace ibv {
             }
         };
 
-        std::string to_string(const MemoryRegion &mr) {
+        inline std::string to_string(const MemoryRegion &mr) {
             std::stringstream addr;
             addr << std::hex << mr.getAddr();
             return std::string("ptr=") + addr.str() + " size=" + std::to_string(mr.getLength()) + " key={..}";
