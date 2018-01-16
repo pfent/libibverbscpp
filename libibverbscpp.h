@@ -1,7 +1,6 @@
 #ifndef LIBIBVERBSCPP_LIBRARY_H
 #define LIBIBVERBSCPP_LIBRARY_H
 
-#include <cassert>
 #include <fcntl.h>
 #include <functional>
 #include <infiniband/verbs.h>
@@ -75,29 +74,29 @@ namespace ibv {
     class Gid {
         ibv_gid underlying;
     public:
-        uint64_t getSubnetPrefix() const {
+        constexpr uint64_t getSubnetPrefix() const {
             return underlying.global.subnet_prefix;
         }
 
-        uint64_t getInterfaceId() const {
+        constexpr uint64_t getInterfaceId() const {
             return underlying.global.interface_id;
         }
     };
 
     struct GlobalRoutingHeader : private ibv_grh {
-        uint32_t getVersionTclassFlow() const {
+        constexpr uint32_t getVersionTclassFlow() const {
             return version_tclass_flow;
         }
 
-        uint16_t getPaylen() const {
+        constexpr uint16_t getPaylen() const {
             return paylen;
         }
 
-        uint8_t getNextHdr() const {
+        constexpr uint8_t getNextHdr() const {
             return next_hdr;
         }
 
-        uint8_t getHopLimit() const {
+        constexpr uint8_t getHopLimit() const {
             return hop_limit;
         }
 
@@ -130,11 +129,11 @@ namespace ibv {
         };
 
         struct Spec : private ibv_flow_spec {
-            SpecType getType() const {
+            constexpr SpecType getType() const {
                 return static_cast<SpecType>(hdr.type);
             }
 
-            uint16_t getSize() const {
+            constexpr uint16_t getSize() const {
                 return hdr.size;
             }
         };
@@ -170,6 +169,10 @@ namespace ibv {
         struct ProtectionDomain;
     } // namespace protectiondomain
 
+    namespace queuepair {
+        struct Attributes;
+    } // namespace queuepair
+
     namespace memorywindow {
         enum class Type : std::underlying_type_t<ibv_mw_type> {
             TYPE_1 = IBV_MW_TYPE_1,
@@ -200,15 +203,15 @@ namespace ibv {
                 return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
             }
 
-            uint32_t getRkey() const {
+            constexpr uint32_t getRkey() const {
                 return rkey;
             }
 
-            uint32_t getHandle() const {
+            constexpr uint32_t getHandle() const {
                 return handle;
             }
 
-            Type getType() {
+            constexpr Type getType() {
                 return static_cast<Type>(type);
             }
         };
@@ -260,71 +263,78 @@ namespace ibv {
         };
 
         struct WorkCompletion : private ibv_wc {
-            uint64_t getId() const {
+            constexpr uint64_t getId() const {
                 return wr_id;
             }
 
-            Status getStatus() const {
+            constexpr Status getStatus() const {
                 return static_cast<Status>(status);
             }
 
-            bool isSuccessful() const {
+            constexpr bool isSuccessful() const {
                 return getStatus() == Status::SUCCESS;
             }
 
-            explicit operator bool() const {
+            explicit constexpr operator bool() const {
                 return isSuccessful();
             }
 
-            Opcode getOpcode() const {
+            constexpr Opcode getOpcode() const {
                 return static_cast<Opcode>(opcode);
             }
 
-            bool hasImmData() const {
+            constexpr bool hasImmData() const {
                 return testFlag(Flag::WITH_IMM);
             }
 
-            bool hasInvRkey() const {
+            constexpr bool hasInvRkey() const {
                 return testFlag(Flag::WITH_INV);
             }
 
-            uint32_t getImmData() const {
-                assert(hasImmData());
+            constexpr uint32_t getImmData() const {
+                checkCondition(hasImmData());
                 return imm_data;
             }
 
-            uint32_t getInvRkey() const {
-                assert(hasInvRkey());
+            constexpr uint32_t getInvRkey() const {
+                checkCondition(hasInvRkey());
                 return imm_data;
             }
 
-            uint32_t getQueuePairNumber() const {
+            constexpr uint32_t getQueuePairNumber() const {
                 return qp_num;
             }
 
-            uint32_t getSourceQueuePair() const {
+            constexpr uint32_t getSourceQueuePair() const {
                 return src_qp;
             }
 
-            bool testFlag(Flag flag) const {
+            constexpr bool testFlag(Flag flag) const {
                 const auto rawFlag = static_cast<ibv_wc_flags>(flag);
                 return (wc_flags & rawFlag) == rawFlag;
             }
 
-            uint16_t getPkeyIndex() const {
+            constexpr uint16_t getPkeyIndex() const {
                 return pkey_index;
             }
 
-            uint16_t getSlid() const {
+            constexpr uint16_t getSlid() const {
                 return slid;
             }
 
-            uint8_t getSl() const {
+            constexpr uint8_t getSl() const {
                 return sl;
             }
 
-            uint8_t getDlidPathBits() const {
+            constexpr uint8_t getDlidPathBits() const {
                 return dlid_path_bits;
+            }
+
+        private:
+            constexpr static void checkCondition(bool condition) {
+                if (not condition) {
+                    throw std::logic_error("Invalid workcompletion data access");
+                }
             }
         };
 
@@ -359,6 +369,7 @@ namespace ibv {
 
     namespace ah {
         struct Attributes : private ibv_ah_attr {
+            friend struct queuepair::Attributes;
             // TODO
         };
 
@@ -471,84 +482,84 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_port_attr {
-            State getState() const {
+            constexpr State getState() const {
                 return static_cast<State>(state);
             }
 
-            Mtu getMaxMtu() const {
+            constexpr Mtu getMaxMtu() const {
                 return static_cast<Mtu>(max_mtu);
             }
 
-            Mtu getActiveMtu() const {
+            constexpr Mtu getActiveMtu() const {
                 return static_cast<Mtu>(active_mtu);
             }
 
-            int getGidTblLen() const {
+            constexpr int getGidTblLen() const {
                 return gid_tbl_len;
             }
 
-            bool hasCapability(CapabilityFlag flag) {
+            constexpr bool hasCapability(CapabilityFlag flag) {
                 const auto rawFlag = static_cast<ibv_port_cap_flags>(flag);
                 return (port_cap_flags & rawFlag) == rawFlag;
             }
 
-            uint32_t getMaxMsgSize() const {
+            constexpr uint32_t getMaxMsgSize() const {
                 return max_msg_sz;
             }
 
-            uint32_t getBadPkeyCntr() const {
+            constexpr uint32_t getBadPkeyCntr() const {
                 return bad_pkey_cntr;
             }
 
-            uint32_t getQkeyViolCntr() const {
+            constexpr uint32_t getQkeyViolCntr() const {
                 return qkey_viol_cntr;
             }
 
-            uint16_t getPkeyTblLen() const {
+            constexpr uint16_t getPkeyTblLen() const {
                 return pkey_tbl_len;
             }
 
-            uint16_t getLid() const {
+            constexpr uint16_t getLid() const {
                 return lid;
             }
 
-            uint16_t getSmLid() const {
+            constexpr uint16_t getSmLid() const {
                 return sm_lid;
             }
 
-            uint8_t getLmc() const {
+            constexpr uint8_t getLmc() const {
                 return lmc;
             }
 
-            uint8_t getMaxVlNum() const {
+            constexpr uint8_t getMaxVlNum() const {
                 return max_vl_num;
             }
 
-            uint8_t getSmSl() const {
+            constexpr uint8_t getSmSl() const {
                 return sm_sl;
             }
 
-            uint8_t getSubnetTimeout() const {
+            constexpr uint8_t getSubnetTimeout() const {
                 return subnet_timeout;
             }
 
-            uint8_t getInitTypeReply() const {
+            constexpr uint8_t getInitTypeReply() const {
                 return init_type_reply;
             }
 
-            uint8_t getActiveWidth() const {
+            constexpr uint8_t getActiveWidth() const {
                 return active_width;
             }
 
-            uint8_t getActiveSpeed() const {
+            constexpr uint8_t getActiveSpeed() const {
                 return active_speed;
             }
 
-            uint8_t getPhysState() const {
+            constexpr uint8_t getPhysState() const {
                 return phys_state;
             }
 
-            uint8_t getLinkLayer() const {
+            constexpr uint8_t getLinkLayer() const {
                 return link_layer;
             }
         };
@@ -589,164 +600,164 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_device_attr {
-            std::string_view getFwVer() const {
+            constexpr std::string_view getFwVer() const {
                 return fw_ver;
             }
 
-            uint64_t getNodeGuid() const {
+            constexpr uint64_t getNodeGuid() const {
                 return node_guid;
             }
 
-            uint64_t getSysImageGuid() const {
+            constexpr uint64_t getSysImageGuid() const {
                 return sys_image_guid;
             }
 
-            uint64_t getMaxMrSize() const {
+            constexpr uint64_t getMaxMrSize() const {
                 return max_mr_size;
             }
 
-            uint64_t getPageSizeCap() const {
+            constexpr uint64_t getPageSizeCap() const {
                 return page_size_cap;
             }
 
-            uint32_t getVendorId() const {
+            constexpr uint32_t getVendorId() const {
                 return vendor_id;
             }
 
-            uint32_t getVendorPartId() const {
+            constexpr uint32_t getVendorPartId() const {
                 return vendor_part_id;
             }
 
-            uint32_t getHwVer() const {
+            constexpr uint32_t getHwVer() const {
                 return hw_ver;
             }
 
-            int getMaxQp() const {
+            constexpr int getMaxQp() const {
                 return max_qp;
             }
 
-            int getMaxQpWr() const {
+            constexpr int getMaxQpWr() const {
                 return max_qp_wr;
             }
 
-            bool hasCapability(CapabilityFlag flag) const {
+            constexpr bool hasCapability(CapabilityFlag flag) const {
                 const auto rawFlag = static_cast<ibv_device_cap_flags>(flag);
                 return (device_cap_flags & rawFlag) == rawFlag;
             }
 
-            int getMaxSge() const {
+            constexpr int getMaxSge() const {
                 return max_sge;
             }
 
-            int getMaxSgeRd() const {
+            constexpr int getMaxSgeRd() const {
                 return max_sge_rd;
             }
 
-            int getMaxCq() const {
+            constexpr int getMaxCq() const {
                 return max_cq;
             }
 
-            int getMaxCqe() const {
+            constexpr int getMaxCqe() const {
                 return max_cqe;
             }
 
-            int getMaxMr() const {
+            constexpr int getMaxMr() const {
                 return max_mr;
             }
 
-            int getMaxPd() const {
+            constexpr int getMaxPd() const {
                 return max_pd;
             }
 
-            int getMaxQpRdAtom() const {
+            constexpr int getMaxQpRdAtom() const {
                 return max_qp_rd_atom;
             }
 
-            int getMaxEeRdAtom() const {
+            constexpr int getMaxEeRdAtom() const {
                 return max_ee_rd_atom;
             }
 
-            int getMaxResRdAtom() const {
+            constexpr int getMaxResRdAtom() const {
                 return max_res_rd_atom;
             }
 
-            int getMaxQpInitRdAtom() const {
+            constexpr int getMaxQpInitRdAtom() const {
                 return max_qp_init_rd_atom;
             }
 
-            int getMaxEeInitRdAtom() const {
+            constexpr int getMaxEeInitRdAtom() const {
                 return max_ee_init_rd_atom;
             }
 
-            AtomicCapabilities getAtomicCap() const {
+            constexpr AtomicCapabilities getAtomicCap() const {
                 return static_cast<AtomicCapabilities>(atomic_cap);
             }
 
-            int getMaxEe() const {
+            constexpr int getMaxEe() const {
                 return max_ee;
             }
 
-            int getMaxRdd() const {
+            constexpr int getMaxRdd() const {
                 return max_rdd;
             }
 
-            int getMaxMw() const {
+            constexpr int getMaxMw() const {
                 return max_mw;
             }
 
-            int getMaxRawIpv6Qp() const {
+            constexpr int getMaxRawIpv6Qp() const {
                 return max_raw_ipv6_qp;
             }
 
-            int getMaxRawEthyQp() const {
+            constexpr int getMaxRawEthyQp() const {
                 return max_raw_ethy_qp;
             }
 
-            int getMaxMcastGrp() const {
+            constexpr int getMaxMcastGrp() const {
                 return max_mcast_grp;
             }
 
-            int getMaxMcastQpAttach() const {
+            constexpr int getMaxMcastQpAttach() const {
                 return max_mcast_qp_attach;
             }
 
-            int getMaxTotalMcastQpAttach() const {
+            constexpr int getMaxTotalMcastQpAttach() const {
                 return max_total_mcast_qp_attach;
             }
 
-            int getMaxAh() const {
+            constexpr int getMaxAh() const {
                 return max_ah;
             }
 
-            int getMaxFmr() const {
+            constexpr int getMaxFmr() const {
                 return max_fmr;
             }
 
-            int getMaxMapPerFmr() const {
+            constexpr int getMaxMapPerFmr() const {
                 return max_map_per_fmr;
             }
 
-            int getMaxSrq() const {
+            constexpr int getMaxSrq() const {
                 return max_srq;
             }
 
-            int getMaxSrqWr() const {
+            constexpr int getMaxSrqWr() const {
                 return max_srq_wr;
             }
 
-            int getMaxSrqSge() const {
+            constexpr int getMaxSrqSge() const {
                 return max_srq_sge;
             }
 
-            uint16_t getMaxPkeys() const {
+            constexpr uint16_t getMaxPkeys() const {
                 return max_pkeys;
             }
 
-            uint8_t getLocalCaAckDelay() const {
+            constexpr uint8_t getLocalCaAckDelay() const {
                 return local_ca_ack_delay;
             }
 
-            uint8_t getPhysPortCnt() const {
+            constexpr uint8_t getPhysPortCnt() const {
                 return phys_port_cnt;
             }
         };
@@ -788,20 +799,19 @@ namespace ibv {
 
             DeviceList &operator=(DeviceList &) = delete;
 
-            Device **begin() {
+            constexpr Device **begin() {
                 return devices;
             }
 
-            Device **end() {
+            constexpr Device **end() {
                 return &devices[num_devices];
             }
 
-            size_t size() const {
+            constexpr size_t size() const {
                 return static_cast<size_t>(num_devices);
             }
 
-            Device *&operator[](int idx) {
-                assert(idx < num_devices);
+            constexpr Device *&operator[](int idx) {
                 return devices[idx];
             }
         };
@@ -843,23 +853,23 @@ namespace ibv {
                 return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
             }
 
-            void *getAddr() const {
+            constexpr void *getAddr() const {
                 return addr;
             }
 
-            size_t getLength() const {
+            constexpr size_t getLength() const {
                 return length;
             }
 
-            uint32_t getHandle() const {
+            constexpr uint32_t getHandle() const {
                 return handle;
             }
 
-            uint32_t getLkey() const {
+            constexpr uint32_t getLkey() const {
                 return lkey;
             }
 
-            uint32_t getRkey() const {
+            constexpr uint32_t getRkey() const {
                 return rkey;
             }
 
@@ -920,48 +930,50 @@ namespace ibv {
         };
 
         struct SendWr : private ibv_send_wr {
-            void setId(uint64_t id) {
+            constexpr SendWr() : ibv_send_wr{} {}
+
+            constexpr void setId(uint64_t id) {
                 wr_id = id;
             }
 
-            uint64_t getId() const {
+            constexpr uint64_t getId() const {
                 return wr_id;
             }
 
-            void setNext(SendWr *wrList) {
+            constexpr void setNext(SendWr *wrList) {
                 next = wrList;
             }
 
-            void setSge(memoryregion::Slice *scatterGatherArray, int size) {
+            constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size) {
                 sg_list = scatterGatherArray;
                 num_sge = size;
             }
 
-            void setFlag(Flags flag) {
+            constexpr void setFlag(Flags flag) {
                 send_flags |= static_cast<ibv_send_flags>(flag);
             }
 
-            void setFence() {
+            constexpr void setFence() {
                 setFlag(Flags::FENCE);
             }
 
-            void setSignaled() {
+            constexpr void setSignaled() {
                 setFlag(Flags::SIGNALED);
             }
 
-            void setSolicited() {
+            constexpr void setSolicited() {
                 setFlag(Flags::SOLICITED);
             }
 
-            void setInline() {
+            constexpr void setInline() {
                 setFlag(Flags::INLINE);
             }
 
-            void setIpCsum() {
+            constexpr void setIpCsum() {
                 setFlag(Flags::IP_CSUM);
             }
 
-            void setFlags(std::initializer_list<Flags> flags) {
+            constexpr void setFlags(std::initializer_list<Flags> flags) {
                 send_flags = 0;
                 for (const auto flag : flags) {
                     setFlag(flag);
@@ -969,35 +981,35 @@ namespace ibv {
             }
 
         protected:
-            void setOpcode(Opcode opcode) {
+            constexpr void setOpcode(Opcode opcode) {
                 this->opcode = static_cast<ibv_wr_opcode>(opcode);
             }
 
-            void setImmData(uint32_t data) {
+            constexpr void setImmData(uint32_t data) {
                 imm_data = data;
             }
 
-            decltype(wr) &getWr() {
+            constexpr decltype(wr) &getWr() {
                 return wr;
             }
         };
 
         // internal
         struct Rdma : SendWr {
-            void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
+            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
                 getWr().rdma.remote_addr = remote_addr;
                 getWr().rdma.rkey = rkey;
             }
         };
 
         struct Write : Rdma {
-            Write() {
+            constexpr Write() {
                 SendWr::setOpcode(Opcode::RDMA_WRITE);
             }
         };
 
         struct WriteWithImm : Write {
-            WriteWithImm() {
+            constexpr WriteWithImm() {
                 WriteWithImm::setOpcode(Opcode::RDMA_WRITE_WITH_IMM);
             }
 
@@ -1005,13 +1017,13 @@ namespace ibv {
         };
 
         struct Send : SendWr {
-            Send() {
+            constexpr Send() {
                 SendWr::setOpcode(Opcode::SEND);
             }
         };
 
         struct SendWithImm : SendWr {
-            SendWithImm() {
+            constexpr SendWithImm() {
                 SendWr::setOpcode(Opcode::SEND_WITH_IMM);
             }
 
@@ -1019,66 +1031,66 @@ namespace ibv {
         };
 
         struct Read : Rdma {
-            Read() {
+            constexpr Read() {
                 SendWr::setOpcode(Opcode::RDMA_READ);
             }
         };
 
         // internal
         struct Atomic : SendWr {
-            void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
+            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
                 getWr().atomic.remote_addr = remote_addr;
                 getWr().atomic.rkey = rkey;
             }
         };
 
         struct AtomicCompareSwap : Atomic {
-            AtomicCompareSwap() {
+            constexpr AtomicCompareSwap() {
                 SendWr::setOpcode(Opcode::ATOMIC_CMP_AND_SWP);
             }
 
-            AtomicCompareSwap(uint64_t compare, uint64_t swap) : AtomicCompareSwap() {
+            constexpr AtomicCompareSwap(uint64_t compare, uint64_t swap) : AtomicCompareSwap() {
                 setCompareValue(compare);
                 setSwapValue(swap);
             }
 
-            void setCompareValue(uint64_t value) {
+            constexpr void setCompareValue(uint64_t value) {
                 getWr().atomic.compare_add = value;
             }
 
-            void setSwapValue(uint64_t value) {
+            constexpr void setSwapValue(uint64_t value) {
                 getWr().atomic.swap = value;
             }
         };
 
         struct AtomicFetchAdd : Atomic {
-            AtomicFetchAdd() {
+            constexpr AtomicFetchAdd() {
                 SendWr::setOpcode(Opcode::ATOMIC_FETCH_AND_ADD);
             }
 
-            explicit AtomicFetchAdd(uint64_t value) : AtomicFetchAdd() {
+            explicit constexpr AtomicFetchAdd(uint64_t value) : AtomicFetchAdd() {
                 setAddValue(value);
             }
 
-            void setAddValue(uint64_t value) {
+            constexpr void setAddValue(uint64_t value) {
                 getWr().atomic.compare_add = value;
             }
         };
 
         struct Recv : private ibv_recv_wr {
-            void setId(uint64_t id) {
+            constexpr void setId(uint64_t id) {
                 wr_id = id;
             }
 
-            uint64_t getId() const {
+            constexpr uint64_t getId() const {
                 return wr_id;
             }
 
-            void setNext(Recv *next) {
+            constexpr void setNext(Recv *next) {
                 this->next = next;
             }
 
-            void setSge(memoryregion::Slice *scatterGatherArray, int size) {
+            constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size) {
                 sg_list = scatterGatherArray;
                 num_sge = size;
             }
@@ -1093,7 +1105,7 @@ namespace ibv {
         public:
             using SendWorkRequest::SendWorkRequest;
 
-            void setLocalAddress(const memoryregion::Slice &sge) {
+            constexpr void setLocalAddress(const memoryregion::Slice &sge) {
                 SendWorkRequest::setSge(&slice, 1);
 
                 slice = sge;
@@ -1125,12 +1137,12 @@ namespace ibv {
 
             friend struct InitAttributes;
 
-            explicit Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0) :
+            explicit constexpr Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0) :
                     ibv_srq_attr{max_wr, max_sge, srq_limit} {}
         };
 
         struct InitAttributes : private ibv_srq_init_attr {
-            explicit InitAttributes(Attributes attrs = Attributes(), void *context = nullptr) :
+            explicit constexpr InitAttributes(Attributes attrs = Attributes(), void *context = nullptr) :
                     ibv_srq_init_attr{context, attrs} {}
         };
 
@@ -1191,7 +1203,7 @@ namespace ibv {
         };
 
         struct InitAttributes : private ibv_xrcd_init_attr {
-            void setValidComponents(std::initializer_list<InitAttributesMask> masks) {
+            constexpr void setValidComponents(std::initializer_list<InitAttributesMask> masks) {
                 uint32_t newMask = 0;
                 for (auto mask : masks) {
                     newMask |= static_cast<uint32_t>(mask);
@@ -1199,11 +1211,11 @@ namespace ibv {
                 this->comp_mask = newMask;
             }
 
-            void setFd(int fd) {
+            constexpr void setFd(int fd) {
                 this->fd = fd;
             }
 
-            void setOflags(std::initializer_list<OpenFlags> oflags) {
+            constexpr void setOflags(std::initializer_list<OpenFlags> oflags) {
                 int flags = 0;
                 for (auto flag : oflags) {
                     flags |= static_cast<int>(flag);
@@ -1294,29 +1306,29 @@ namespace ibv {
         };
 
         struct Capabilities : public ibv_qp_cap {
-            uint32_t getMaxSendWr() const {
+            constexpr uint32_t getMaxSendWr() const {
                 return max_send_wr;
             }
 
-            uint32_t getMaxRecvWr() const {
+            constexpr uint32_t getMaxRecvWr() const {
                 return max_recv_wr;
             }
 
-            uint32_t getMaxSendSge() const {
+            constexpr uint32_t getMaxSendSge() const {
                 return max_send_sge;
             }
 
-            uint32_t getMaxRecvSge() const {
+            constexpr uint32_t getMaxRecvSge() const {
                 return max_recv_sge;
             }
 
-            uint32_t getMaxInlineData() const {
+            constexpr uint32_t getMaxInlineData() const {
                 return max_inline_data;
             }
         };
 
         struct OpenAttributes : private ibv_qp_open_attr {
-            void setCompMask(std::initializer_list<OpenAttrMask> masks) {
+            constexpr void setCompMask(std::initializer_list<OpenAttrMask> masks) {
                 uint32_t newMask = 0;
                 for (auto mask : masks) {
                     newMask |= static_cast<uint32_t>(mask);
@@ -1324,7 +1336,7 @@ namespace ibv {
                 this->comp_mask = newMask;
             }
 
-            void setQpNum(uint32_t qp_num) {
+            constexpr void setQpNum(uint32_t qp_num) {
                 this->qp_num = qp_num;
             }
 
@@ -1332,11 +1344,11 @@ namespace ibv {
                 this->xrcd = reinterpret_cast<ibv_xrcd *>(&xrcd);
             }
 
-            void setQpContext(void *qp_context) {
+            constexpr void setQpContext(void *qp_context) {
                 this->qp_context = qp_context;
             }
 
-            void setQpType(Type qp_type) {
+            constexpr void setQpType(Type qp_type) {
                 this->qp_type = static_cast<ibv_qp_type>(qp_type);
             }
         };
@@ -1344,76 +1356,76 @@ namespace ibv {
         struct Attributes : private ibv_qp_attr {
             friend struct QueuePair;
 
-            State getQpState() const {
+            constexpr State getQpState() const {
                 return static_cast<State>(qp_state);
             }
 
-            void setQpState(State qp_state) {
+            constexpr void setQpState(State qp_state) {
                 this->qp_state = static_cast<ibv_qp_state>(qp_state);
             }
 
-            State getCurQpState() const {
+            constexpr State getCurQpState() const {
                 return static_cast<State>(cur_qp_state);
             }
 
-            void setCurQpState(State cur_qp_state) {
+            constexpr void setCurQpState(State cur_qp_state) {
                 this->cur_qp_state = static_cast<ibv_qp_state>(cur_qp_state);
             }
 
-            Mtu getPathMtu() const {
+            constexpr Mtu getPathMtu() const {
                 return static_cast<Mtu>(path_mtu);
             }
 
-            void setPathMtu(Mtu path_mtu) {
+            constexpr void setPathMtu(Mtu path_mtu) {
                 this->path_mtu = static_cast<ibv_mtu>(path_mtu);
             }
 
-            MigrationState getPathMigState() const {
+            constexpr MigrationState getPathMigState() const {
                 return static_cast<MigrationState>(path_mig_state);
             }
 
-            void setPathMigState(MigrationState path_mig_state) {
+            constexpr void setPathMigState(MigrationState path_mig_state) {
                 this->path_mig_state = static_cast<ibv_mig_state>(path_mig_state);
             }
 
-            uint32_t getQkey() const {
+            constexpr uint32_t getQkey() const {
                 return qkey;
             }
 
-            void setQkey(uint32_t qkey) {
+            constexpr void setQkey(uint32_t qkey) {
                 this->qkey = qkey;
             }
 
-            uint32_t getRqPsn() const {
+            constexpr uint32_t getRqPsn() const {
                 return rq_psn;
             }
 
-            void setRqPsn(uint32_t rq_psn) {
+            constexpr void setRqPsn(uint32_t rq_psn) {
                 this->rq_psn = rq_psn;
             }
 
-            uint32_t getSqPsn() const {
+            constexpr uint32_t getSqPsn() const {
                 return sq_psn;
             }
 
-            void setSqPsn(uint32_t sq_psn) {
+            constexpr void setSqPsn(uint32_t sq_psn) {
                 this->sq_psn = sq_psn;
             }
 
-            uint32_t getDestQpNum() const {
+            constexpr uint32_t getDestQpNum() const {
                 return dest_qp_num;
             }
 
-            void setDestQpNum(uint32_t dest_qp_num) {
+            constexpr void setDestQpNum(uint32_t dest_qp_num) {
                 this->dest_qp_num = dest_qp_num;
             }
 
-            bool hasQpAccessFlags(AccessFlag flag) const {
+            constexpr bool hasQpAccessFlags(AccessFlag flag) const {
                 const auto rawFlag = static_cast<ibv_access_flags>(flag);
                 return (qp_access_flags & rawFlag) == rawFlag;
             }
 
-            void setQpAccessFlags(std::initializer_list<AccessFlag> qp_access_flags) {
+            constexpr void setQpAccessFlags(std::initializer_list<AccessFlag> qp_access_flags) {
                 int raw = 0;
                 for (auto flag : qp_access_flags) {
                     raw |= static_cast<ibv_access_flags>(flag);
@@ -1425,127 +1437,127 @@ namespace ibv {
                 return *reinterpret_cast<const Capabilities *>(&cap);
             }
 
-            void setCap(const Capabilities &cap) {
+            constexpr void setCap(const Capabilities &cap) {
                 this->cap = cap;
             }
 
-            const ah::Attributes &getAhAttr() const {
-                return *reinterpret_cast<const ah::Attributes *>(&ah_attr);
+            constexpr const ah::Attributes &getAhAttr() const {
+                return *static_cast<const ah::Attributes *>(&ah_attr);
             }
 
-            void setAhAttr(const ah::Attributes &ah_attr) {
-                this->ah_attr = reinterpret_cast<const ibv_ah_attr &>(ah_attr);
+            constexpr void setAhAttr(const ah::Attributes &ah_attr) {
+                this->ah_attr = ah_attr;
             }
 
-            const ah::Attributes &getAltAhAttr() const {
-                return *reinterpret_cast<const ah::Attributes *>(&alt_ah_attr);
+            constexpr const ah::Attributes &getAltAhAttr() const {
+                return *static_cast<const ah::Attributes *>(&alt_ah_attr);
             }
 
-            void setAltAhAttr(const ah::Attributes &alt_ah_attr) {
-                this->alt_ah_attr = reinterpret_cast<const ibv_ah_attr &>(alt_ah_attr);
+            constexpr void setAltAhAttr(const ah::Attributes &alt_ah_attr) {
+                this->alt_ah_attr = alt_ah_attr;
             }
 
-            uint16_t getPkeyIndex() const {
+            constexpr uint16_t getPkeyIndex() const {
                 return pkey_index;
             }
 
-            void setPkeyIndex(uint16_t pkey_index) {
+            constexpr void setPkeyIndex(uint16_t pkey_index) {
                 this->pkey_index = pkey_index;
             }
 
-            uint16_t getAltPkeyIndex() const {
+            constexpr uint16_t getAltPkeyIndex() const {
                 return alt_pkey_index;
             }
 
-            void setAltPkeyIndex(uint16_t alt_pkey_index) {
+            constexpr void setAltPkeyIndex(uint16_t alt_pkey_index) {
                 this->alt_pkey_index = alt_pkey_index;
             }
 
-            uint8_t getEnSqdAsyncNotify() const {
+            constexpr uint8_t getEnSqdAsyncNotify() const {
                 return en_sqd_async_notify;
             }
 
-            void setEnSqdAsyncNotify(uint8_t en_sqd_async_notify) {
+            constexpr void setEnSqdAsyncNotify(uint8_t en_sqd_async_notify) {
                 this->en_sqd_async_notify = en_sqd_async_notify;
             }
 
-            uint8_t getSqDraining() const {
+            constexpr uint8_t getSqDraining() const {
                 return sq_draining;
             }
 
-            void setSqDraining(uint8_t sq_draining) {
+            constexpr void setSqDraining(uint8_t sq_draining) {
                 this->sq_draining = sq_draining;
             }
 
-            uint8_t getMaxRdAtomic() const {
+            constexpr uint8_t getMaxRdAtomic() const {
                 return max_rd_atomic;
             }
 
-            void setMaxRdAtomic(uint8_t max_rd_atomic) {
+            constexpr void setMaxRdAtomic(uint8_t max_rd_atomic) {
                 this->max_rd_atomic = max_rd_atomic;
             }
 
-            uint8_t getMaxDestRdAtomic() const {
+            constexpr uint8_t getMaxDestRdAtomic() const {
                 return max_dest_rd_atomic;
             }
 
-            void setMaxDestRdAtomic(uint8_t max_dest_rd_atomic) {
+            constexpr void setMaxDestRdAtomic(uint8_t max_dest_rd_atomic) {
                 this->max_dest_rd_atomic = max_dest_rd_atomic;
             }
 
-            uint8_t getMinRnrTimer() const {
+            constexpr uint8_t getMinRnrTimer() const {
                 return min_rnr_timer;
             }
 
-            void setMinRnrTimer(uint8_t min_rnr_timer) {
+            constexpr void setMinRnrTimer(uint8_t min_rnr_timer) {
                 this->min_rnr_timer = min_rnr_timer;
             }
 
-            uint8_t getPortNum() const {
+            constexpr uint8_t getPortNum() const {
                 return port_num;
             }
 
-            void setPortNum(uint8_t port_num) {
+            constexpr void setPortNum(uint8_t port_num) {
                 this->port_num = port_num;
             }
 
-            uint8_t getTimeout() const {
+            constexpr uint8_t getTimeout() const {
                 return timeout;
             }
 
-            void setTimeout(uint8_t timeout) {
+            constexpr void setTimeout(uint8_t timeout) {
                 this->timeout = timeout;
             }
 
-            uint8_t getRetryCnt() const {
+            constexpr uint8_t getRetryCnt() const {
                 return retry_cnt;
             }
 
-            void setRetryCnt(uint8_t retry_cnt) {
+            constexpr void setRetryCnt(uint8_t retry_cnt) {
                 this->retry_cnt = retry_cnt;
             }
 
-            uint8_t getRnrRetry() const {
+            constexpr uint8_t getRnrRetry() const {
                 return rnr_retry;
             }
 
-            void setRnrRetry(uint8_t rnr_retry) {
+            constexpr void setRnrRetry(uint8_t rnr_retry) {
                 this->rnr_retry = rnr_retry;
             }
 
-            uint8_t getAltPortNum() const {
+            constexpr uint8_t getAltPortNum() const {
                 return alt_port_num;
             }
 
-            void setAltPortNum(uint8_t alt_port_num) {
+            constexpr void setAltPortNum(uint8_t alt_port_num) {
                 this->alt_port_num = alt_port_num;
             }
 
-            uint8_t getAltTimeout() const {
+            constexpr uint8_t getAltTimeout() const {
                 return alt_timeout;
             }
 
-            void setAltTimeout(uint8_t alt_timeout) {
+            constexpr void setAltTimeout(uint8_t alt_timeout) {
                 this->alt_timeout = alt_timeout;
             }
         };
@@ -1553,7 +1565,7 @@ namespace ibv {
         struct InitAttributes : private ibv_qp_init_attr {
             friend struct QueuePair;
 
-            void setContext(void *context) {
+            constexpr void setContext(void *context) {
                 qp_context = context;
             }
 
@@ -1569,15 +1581,15 @@ namespace ibv {
                 srq = reinterpret_cast<ibv_srq *>(&sharedReceiveQueue);
             }
 
-            void setCapabilities(const Capabilities &caps) {
+            constexpr void setCapabilities(const Capabilities &caps) {
                 cap = caps;
             }
 
-            void setType(Type type) {
+            constexpr void setType(Type type) {
                 qp_type = static_cast<ibv_qp_type>(type);
             }
 
-            void setSignalAll(bool shouldSignal) {
+            constexpr void setSignalAll(bool shouldSignal) {
                 sq_sig_all = static_cast<int>(shouldSignal);
             }
         };
@@ -1590,7 +1602,7 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_qp", status);
             }
 
-            uint32_t getNum() const {
+            constexpr uint32_t getNum() const {
                 return qp_num;
             }
 
@@ -1765,7 +1777,7 @@ namespace ibv {
                 return reinterpret_cast<context::Context *>(context);
             }
 
-            uint32_t getHandle() const {
+            constexpr uint32_t getHandle() const {
                 return handle;
             }
 
