@@ -176,8 +176,8 @@ namespace ibv {
         struct Flow : private ibv_flow {
             Flow(const Flow &) = delete; // Can't be constructed
 
-            ~Flow() {
-                const auto status = ibv_destroy_flow(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_destroy_flow(reinterpret_cast<ibv_flow *>(ptr));
                 checkStatusNoThrow("ibv_destroy_flow", status);
             }
         };
@@ -212,8 +212,8 @@ namespace ibv {
         struct MemoryWindow : private ibv_mw {
             MemoryWindow(const MemoryWindow &) = delete; // Can't be constructed
 
-            ~MemoryWindow() {
-                const auto status = ibv_dealloc_mw(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_dealloc_mw(reinterpret_cast<ibv_mw *>(ptr));
                 checkStatusNoThrow("ibv_dealloc_mw", status);
             }
 
@@ -453,8 +453,8 @@ namespace ibv {
         struct AddressHandle : private ibv_ah {
             AddressHandle(const AddressHandle &) = delete;
 
-            ~AddressHandle() {
-                const auto status = ibv_destroy_ah(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_destroy_ah(reinterpret_cast<ibv_ah *>(ptr));
                 checkStatusNoThrow("ibv_destroy_ah", status);
             }
         };
@@ -466,8 +466,8 @@ namespace ibv {
 
             CompletionQueue(const CompletionQueue &) = delete;
 
-            ~CompletionQueue() {
-                const auto status = ibv_destroy_cq(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_destroy_cq(reinterpret_cast<ibv_cq *>(ptr));
                 checkStatusNoThrow("ibv_destroy_cq", status);
             }
 
@@ -495,8 +495,8 @@ namespace ibv {
         struct CompletionEventChannel : private ibv_comp_channel {
             CompletionEventChannel(const CompletionEventChannel &) = delete;
 
-            ~CompletionEventChannel() {
-                const auto status = ibv_destroy_comp_channel(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_destroy_comp_channel(reinterpret_cast<ibv_comp_channel *>(ptr));
                 checkStatusNoThrow("ibv_destroy_comp_channel", status);
             }
 
@@ -949,8 +949,8 @@ namespace ibv {
         struct MemoryRegion : private ibv_mr {
             MemoryRegion(const MemoryRegion &) = delete;
 
-            ~MemoryRegion() {
-                const auto status = ibv_dereg_mr(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_dereg_mr(reinterpret_cast<ibv_mr *>(ptr));
                 checkStatusNoThrow("ibv_dereg_mr", status);
             }
 
@@ -1261,8 +1261,8 @@ namespace ibv {
         struct SharedReceiveQueue : private ibv_srq {
             SharedReceiveQueue(const SharedReceiveQueue &) = delete;
 
-            ~SharedReceiveQueue() {
-                const auto status = ibv_destroy_srq(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_destroy_srq(reinterpret_cast<ibv_srq *>(ptr));
                 checkStatusNoThrow("ibv_destroy_srq", status);
             }
 
@@ -1339,8 +1339,8 @@ namespace ibv {
         struct ExtendedConnectionDomain : private ibv_xrcd {
             ExtendedConnectionDomain(const ExtendedConnectionDomain &) = delete;
 
-            ~ExtendedConnectionDomain() {
-                const auto status = ibv_close_xrcd(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_close_xrcd(reinterpret_cast<ibv_xrcd *>(ptr));
                 checkStatusNoThrow("ibv_close_xrcd", status);
             }
         };
@@ -1743,8 +1743,8 @@ namespace ibv {
         struct QueuePair : private ibv_qp {
             QueuePair(const QueuePair &) = delete;
 
-            ~QueuePair() {
-                const auto status = ibv_destroy_qp(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_destroy_qp(reinterpret_cast<ibv_qp *>(ptr));
                 checkStatusNoThrow("ibv_destroy_qp", status);
             }
 
@@ -1934,8 +1934,8 @@ namespace ibv {
         struct ProtectionDomain : private ibv_pd {
             ProtectionDomain(const ProtectionDomain &) = delete;
 
-            ~ProtectionDomain() {
-                const auto status = ibv_dealloc_pd(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_dealloc_pd(reinterpret_cast<ibv_pd *>(ptr));
                 checkStatusNoThrow("ibv_dealloc_pd", status);
             }
 
@@ -2006,8 +2006,8 @@ namespace ibv {
         struct Context : private ibv_context {
             Context(const Context &) = delete;
 
-            ~Context() {
-                const auto status = ibv_close_device(this);
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_close_device(reinterpret_cast<ibv_context *>(ptr));
                 checkStatusNoThrow("ibv_close_device", status);
             }
 
