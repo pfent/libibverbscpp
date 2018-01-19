@@ -13,6 +13,7 @@
 namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
     namespace {
+        [[nodiscard]]
         std::runtime_error exception(std::string_view function, int errnum) {
             return std::runtime_error(
                     std::string(function) + " failed with error " + std::to_string(errnum) + ": " + strerror(errnum));
@@ -74,58 +75,71 @@ namespace ibv {
     class Gid {
         ibv_gid underlying;
     public:
+        [[nodiscard]]
         constexpr uint64_t getSubnetPrefix() const {
             return underlying.global.subnet_prefix;
         }
 
+        [[nodiscard]]
         constexpr uint64_t getInterfaceId() const {
             return underlying.global.interface_id;
         }
     };
 
     struct GlobalRoutingHeader : private ibv_grh {
+        [[nodiscard]]
         constexpr uint32_t getVersionTclassFlow() const {
             return version_tclass_flow;
         }
 
+        [[nodiscard]]
         constexpr uint16_t getPaylen() const {
             return paylen;
         }
 
+        [[nodiscard]]
         constexpr uint8_t getNextHdr() const {
             return next_hdr;
         }
 
+        [[nodiscard]]
         constexpr uint8_t getHopLimit() const {
             return hop_limit;
         }
 
+        [[nodiscard]]
         const Gid &getSgid() const {
             return *reinterpret_cast<const Gid *>(&sgid);
         }
 
+        [[nodiscard]]
         const Gid &getDgid() const {
             return *reinterpret_cast<const Gid *>(&dgid);
         }
     };
 
     struct GlobalRoute : private ibv_global_route {
+        [[nodiscard]]
         const Gid &getDgid() const {
             return *reinterpret_cast<const Gid *>(&dgid);
         }
 
+        [[nodiscard]]
         uint32_t getFlowLabel() const {
             return flow_label;
         }
 
+        [[nodiscard]]
         uint8_t getSgidIndex() const {
             return sgid_index;
         }
 
+        [[nodiscard]]
         uint8_t getHopLimit() const {
             return hop_limit;
         }
 
+        [[nodiscard]]
         uint8_t getTrafficClass() const {
             return traffic_class;
         }
@@ -170,7 +184,7 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_flow_attr {
-            // TODO
+            // TODO: setters for this
         };
 
         struct Flow : private ibv_flow {
@@ -217,22 +231,27 @@ namespace ibv {
                 checkStatusNoThrow("ibv_dealloc_mw", status);
             }
 
+            [[nodiscard]]
             context::Context *getContext() const {
                 return reinterpret_cast<context::Context *>(context);
             }
 
+            [[nodiscard]]
             protectiondomain::ProtectionDomain *getPd() const {
                 return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
             }
 
+            [[nodiscard]]
             constexpr uint32_t getRkey() const {
                 return rkey;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getHandle() const {
                 return handle;
             }
 
+            [[nodiscard]]
             constexpr Type getType() {
                 return static_cast<Type>(type);
             }
@@ -285,69 +304,85 @@ namespace ibv {
         };
 
         struct WorkCompletion : private ibv_wc {
+            [[nodiscard]]
             constexpr uint64_t getId() const {
                 return wr_id;
             }
 
+            [[nodiscard]]
             constexpr Status getStatus() const {
                 return static_cast<Status>(status);
             }
 
+            [[nodiscard]]
             constexpr bool isSuccessful() const {
                 return getStatus() == Status::SUCCESS;
             }
 
+            [[nodiscard]]
             explicit constexpr operator bool() const {
                 return isSuccessful();
             }
 
+            [[nodiscard]]
             constexpr Opcode getOpcode() const {
                 return static_cast<Opcode>(opcode);
             }
 
+            [[nodiscard]]
             constexpr bool hasImmData() const {
                 return testFlag(Flag::WITH_IMM);
             }
 
+            [[nodiscard]]
             constexpr bool hasInvRkey() const {
                 return testFlag(Flag::WITH_INV);
             }
 
+            [[nodiscard]]
             constexpr uint32_t getImmData() const {
                 checkCondition(hasImmData());
                 return imm_data;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getInvRkey() const {
                 checkCondition(hasInvRkey());
                 return imm_data;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getQueuePairNumber() const {
                 return qp_num;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getSourceQueuePair() const {
                 return src_qp;
             }
 
+            [[nodiscard]]
             constexpr bool testFlag(Flag flag) const {
                 const auto rawFlag = static_cast<ibv_wc_flags>(flag);
                 return (wc_flags & rawFlag) == rawFlag;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getPkeyIndex() const {
                 return pkey_index;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getSlid() const {
                 return slid;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getSl() const {
                 return sl;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getDlidPathBits() const {
                 return dlid_path_bits;
             }
@@ -360,6 +395,7 @@ namespace ibv {
             }
         };
 
+        [[nodiscard]]
         inline std::string to_string(Opcode opcode) {
             switch (opcode) {
                 case Opcode::SEND:
@@ -384,6 +420,7 @@ namespace ibv {
             __builtin_unreachable();
         }
 
+        [[nodiscard]]
         inline std::string to_string(Status status) {
             return ibv_wc_status_str(static_cast<ibv_wc_status>(status));
         }
@@ -393,6 +430,7 @@ namespace ibv {
         struct Attributes : private ibv_ah_attr {
             friend struct queuepair::Attributes;
 
+            [[nodiscard]]
             const GlobalRoute &getGrh() const {
                 return *reinterpret_cast<const GlobalRoute *>(&grh);
             }
@@ -401,6 +439,7 @@ namespace ibv {
                 this->grh = *reinterpret_cast<const ibv_global_route *>(&grh);
             }
 
+            [[nodiscard]]
             constexpr uint16_t getDlid() const {
                 return dlid;
             }
@@ -409,6 +448,7 @@ namespace ibv {
                 this->dlid = dlid;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getSl() const {
                 return sl;
             }
@@ -417,6 +457,7 @@ namespace ibv {
                 this->sl = sl;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getSrcPathBits() const {
                 return src_path_bits;
             }
@@ -425,6 +466,7 @@ namespace ibv {
                 this->src_path_bits = src_path_bits;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getStaticRate() const {
                 return static_rate;
             }
@@ -433,6 +475,7 @@ namespace ibv {
                 this->static_rate = static_rate;
             }
 
+            [[nodiscard]]
             constexpr bool getIsGlobal() const {
                 return static_cast<bool>(is_global);
             }
@@ -441,6 +484,7 @@ namespace ibv {
                 this->is_global = static_cast<uint8_t>(is_global);
             }
 
+            [[nodiscard]]
             constexpr uint8_t getPortNum() const {
                 return port_num;
             }
@@ -480,6 +524,7 @@ namespace ibv {
                 ibv_ack_cq_events(this, nEvents);
             }
 
+            [[nodiscard]]
             int poll(int numEntries, workcompletion::WorkCompletion *resultArray) {
                 const auto res = ibv_poll_cq(this, numEntries, reinterpret_cast<ibv_wc *>(resultArray));
                 check("ibv_poll_cq", res >= 0);
@@ -500,6 +545,7 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_comp_channel", status);
             }
 
+            [[nodiscard]]
             std::tuple<CompletionQueue *, void *> getEvent() {
                 CompletionQueue *cqRet;
                 void *contextRet;
@@ -507,10 +553,6 @@ namespace ibv {
                 checkStatus("ibv_get_cq_event", status);
                 return {cqRet, contextRet};
             }
-        };
-
-        struct PollAttributes : private ibv_poll_cq_attr {
-            // TODO
         };
     } // namespace completions
 
@@ -522,6 +564,7 @@ namespace ibv {
         _4096 = IBV_MTU_4096
     };
 
+    [[nodiscard]]
     inline std::string to_string(Mtu mtu) {
         switch (mtu) {
             case Mtu::_256:
@@ -575,83 +618,103 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_port_attr {
+            [[nodiscard]]
             constexpr State getState() const {
                 return static_cast<State>(state);
             }
 
+            [[nodiscard]]
             constexpr Mtu getMaxMtu() const {
                 return static_cast<Mtu>(max_mtu);
             }
 
+            [[nodiscard]]
             constexpr Mtu getActiveMtu() const {
                 return static_cast<Mtu>(active_mtu);
             }
 
+            [[nodiscard]]
             constexpr int getGidTblLen() const {
                 return gid_tbl_len;
             }
 
+            [[nodiscard]]
             constexpr bool hasCapability(CapabilityFlag flag) {
                 const auto rawFlag = static_cast<ibv_port_cap_flags>(flag);
                 return (port_cap_flags & rawFlag) == rawFlag;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getMaxMsgSize() const {
                 return max_msg_sz;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getBadPkeyCntr() const {
                 return bad_pkey_cntr;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getQkeyViolCntr() const {
                 return qkey_viol_cntr;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getPkeyTblLen() const {
                 return pkey_tbl_len;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getLid() const {
                 return lid;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getSmLid() const {
                 return sm_lid;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getLmc() const {
                 return lmc;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getMaxVlNum() const {
                 return max_vl_num;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getSmSl() const {
                 return sm_sl;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getSubnetTimeout() const {
                 return subnet_timeout;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getInitTypeReply() const {
                 return init_type_reply;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getActiveWidth() const {
                 return active_width;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getActiveSpeed() const {
                 return active_speed;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getPhysState() const {
                 return phys_state;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getLinkLayer() const {
                 return link_layer;
             }
@@ -693,163 +756,203 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_device_attr {
+            [[nodiscard]]
             constexpr std::string_view getFwVer() const {
                 return fw_ver;
             }
 
+            [[nodiscard]]
             constexpr uint64_t getNodeGuid() const {
                 return node_guid;
             }
 
+            [[nodiscard]]
             constexpr uint64_t getSysImageGuid() const {
                 return sys_image_guid;
             }
 
+            [[nodiscard]]
             constexpr uint64_t getMaxMrSize() const {
                 return max_mr_size;
             }
 
+            [[nodiscard]]
             constexpr uint64_t getPageSizeCap() const {
                 return page_size_cap;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getVendorId() const {
                 return vendor_id;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getVendorPartId() const {
                 return vendor_part_id;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getHwVer() const {
                 return hw_ver;
             }
 
+            [[nodiscard]]
             constexpr int getMaxQp() const {
                 return max_qp;
             }
 
+            [[nodiscard]]
             constexpr int getMaxQpWr() const {
                 return max_qp_wr;
             }
 
+            [[nodiscard]]
             constexpr bool hasCapability(CapabilityFlag flag) const {
                 const auto rawFlag = static_cast<ibv_device_cap_flags>(flag);
                 return (device_cap_flags & rawFlag) == rawFlag;
             }
 
+            [[nodiscard]]
             constexpr int getMaxSge() const {
                 return max_sge;
             }
 
+            [[nodiscard]]
             constexpr int getMaxSgeRd() const {
                 return max_sge_rd;
             }
 
+            [[nodiscard]]
             constexpr int getMaxCq() const {
                 return max_cq;
             }
 
+            [[nodiscard]]
             constexpr int getMaxCqe() const {
                 return max_cqe;
             }
 
+            [[nodiscard]]
             constexpr int getMaxMr() const {
                 return max_mr;
             }
 
+            [[nodiscard]]
             constexpr int getMaxPd() const {
                 return max_pd;
             }
 
+            [[nodiscard]]
             constexpr int getMaxQpRdAtom() const {
                 return max_qp_rd_atom;
             }
 
+            [[nodiscard]]
             constexpr int getMaxEeRdAtom() const {
                 return max_ee_rd_atom;
             }
 
+            [[nodiscard]]
             constexpr int getMaxResRdAtom() const {
                 return max_res_rd_atom;
             }
 
+            [[nodiscard]]
             constexpr int getMaxQpInitRdAtom() const {
                 return max_qp_init_rd_atom;
             }
 
+            [[nodiscard]]
             constexpr int getMaxEeInitRdAtom() const {
                 return max_ee_init_rd_atom;
             }
 
+            [[nodiscard]]
             constexpr AtomicCapabilities getAtomicCap() const {
                 return static_cast<AtomicCapabilities>(atomic_cap);
             }
 
+            [[nodiscard]]
             constexpr int getMaxEe() const {
                 return max_ee;
             }
 
+            [[nodiscard]]
             constexpr int getMaxRdd() const {
                 return max_rdd;
             }
 
+            [[nodiscard]]
             constexpr int getMaxMw() const {
                 return max_mw;
             }
 
+            [[nodiscard]]
             constexpr int getMaxRawIpv6Qp() const {
                 return max_raw_ipv6_qp;
             }
 
+            [[nodiscard]]
             constexpr int getMaxRawEthyQp() const {
                 return max_raw_ethy_qp;
             }
 
+            [[nodiscard]]
             constexpr int getMaxMcastGrp() const {
                 return max_mcast_grp;
             }
 
+            [[nodiscard]]
             constexpr int getMaxMcastQpAttach() const {
                 return max_mcast_qp_attach;
             }
 
+            [[nodiscard]]
             constexpr int getMaxTotalMcastQpAttach() const {
                 return max_total_mcast_qp_attach;
             }
 
+            [[nodiscard]]
             constexpr int getMaxAh() const {
                 return max_ah;
             }
 
+            [[nodiscard]]
             constexpr int getMaxFmr() const {
                 return max_fmr;
             }
 
+            [[nodiscard]]
             constexpr int getMaxMapPerFmr() const {
                 return max_map_per_fmr;
             }
 
+            [[nodiscard]]
             constexpr int getMaxSrq() const {
                 return max_srq;
             }
 
+            [[nodiscard]]
             constexpr int getMaxSrqWr() const {
                 return max_srq_wr;
             }
 
+            [[nodiscard]]
             constexpr int getMaxSrqSge() const {
                 return max_srq_sge;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getMaxPkeys() const {
                 return max_pkeys;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getLocalCaAckDelay() const {
                 return local_ca_ack_delay;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getPhysPortCnt() const {
                 return phys_port_cnt;
             }
@@ -858,14 +961,17 @@ namespace ibv {
         struct Device : private ibv_device {
             Device(const Device &) = delete;
 
+            [[nodiscard]]
             std::string_view getName() {
                 return std::string_view(ibv_get_device_name(this));
             }
 
+            [[nodiscard]]
             uint64_t getGUID() {
                 return ibv_get_device_guid(this);
             }
 
+            [[nodiscard]]
             std::unique_ptr<context::Context> open() {
                 using Ctx = context::Context;
                 const auto context = ibv_open_device(this);
@@ -892,14 +998,17 @@ namespace ibv {
 
             DeviceList &operator=(DeviceList &) = delete;
 
+            [[nodiscard]]
             constexpr Device **begin() {
                 return devices;
             }
 
+            [[nodiscard]]
             constexpr Device **end() {
                 return &devices[num_devices];
             }
 
+            [[nodiscard]]
             constexpr size_t size() const {
                 return static_cast<size_t>(num_devices);
             }
@@ -927,6 +1036,7 @@ namespace ibv {
             CMD_AND_DO_FORK_NEW = IBV_REREG_MR_ERR_CMD_AND_DO_FORK_NEW
         };
 
+        [[nodiscard]]
         inline std::string to_string(ReregErrorCode ec) {
             switch (ec) {
                 case ReregErrorCode::INPUT:
@@ -954,38 +1064,47 @@ namespace ibv {
                 checkStatusNoThrow("ibv_dereg_mr", status);
             }
 
+            [[nodiscard]]
             context::Context *getContext() const {
                 return reinterpret_cast<context::Context *>(context);
             }
 
+            [[nodiscard]]
             protectiondomain::ProtectionDomain *getPd() const {
                 return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
             }
 
+            [[nodiscard]]
             constexpr void *getAddr() const {
                 return addr;
             }
 
+            [[nodiscard]]
             constexpr size_t getLength() const {
                 return length;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getHandle() const {
                 return handle;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getLkey() const {
                 return lkey;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getRkey() const {
                 return rkey;
             }
 
+            [[nodiscard]]
             Slice getSlice() {
                 return Slice{{reinterpret_cast<uintptr_t>(addr), static_cast<uint32_t>(length), lkey}};
             }
 
+            [[nodiscard]]
             Slice getSlice(uint32_t offset, uint32_t sliceLength) {
                 return Slice{{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey}};
             }
@@ -1011,6 +1130,7 @@ namespace ibv {
             }
         };
 
+        [[nodiscard]]
         inline std::string to_string(const MemoryRegion &mr) {
             std::stringstream addr;
             addr << std::hex << mr.getAddr();
@@ -1048,6 +1168,7 @@ namespace ibv {
                 wr_id = id;
             }
 
+            [[nodiscard]]
             constexpr uint64_t getId() const {
                 return wr_id;
             }
@@ -1101,6 +1222,7 @@ namespace ibv {
                 imm_data = data;
             }
 
+            [[nodiscard]]
             constexpr decltype(wr) &getWr() {
                 return wr;
             }
@@ -1194,6 +1316,7 @@ namespace ibv {
                 wr_id = id;
             }
 
+            [[nodiscard]]
             constexpr uint64_t getId() const {
                 return wr_id;
             }
@@ -1281,12 +1404,14 @@ namespace ibv {
                 checkStatus("ibv_query_srq", status);
             }
 
+            [[nodiscard]]
             Attributes query() {
                 Attributes res{};
                 query(res);
                 return res;
             }
 
+            [[nodiscard]]
             uint32_t getNumber() {
                 uint32_t num = 0;
                 const auto status = ibv_get_srq_num(this, &num);
@@ -1411,6 +1536,7 @@ namespace ibv {
             UNKNOWN = IBV_QPS_UNKNOWN
         };
 
+        [[nodiscard]]
         inline std::string to_string(State state) {
             switch (state) {
                 case State::RESET:
@@ -1439,6 +1565,7 @@ namespace ibv {
             ARMED = IBV_MIG_ARMED
         };
 
+        [[nodiscard]]
         inline std::string to_string(MigrationState ms) {
             switch (ms) {
                 case MigrationState::MIGRATED:
@@ -1452,22 +1579,27 @@ namespace ibv {
         }
 
         struct Capabilities : public ibv_qp_cap {
+            [[nodiscard]]
             constexpr uint32_t getMaxSendWr() const {
                 return max_send_wr;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getMaxRecvWr() const {
                 return max_recv_wr;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getMaxSendSge() const {
                 return max_send_sge;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getMaxRecvSge() const {
                 return max_recv_sge;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getMaxInlineData() const {
                 return max_inline_data;
             }
@@ -1502,6 +1634,7 @@ namespace ibv {
         struct Attributes : private ibv_qp_attr {
             friend struct QueuePair;
 
+            [[nodiscard]]
             constexpr State getQpState() const {
                 return static_cast<State>(qp_state);
             }
@@ -1510,6 +1643,7 @@ namespace ibv {
                 this->qp_state = static_cast<ibv_qp_state>(qp_state);
             }
 
+            [[nodiscard]]
             constexpr State getCurQpState() const {
                 return static_cast<State>(cur_qp_state);
             }
@@ -1518,6 +1652,7 @@ namespace ibv {
                 this->cur_qp_state = static_cast<ibv_qp_state>(cur_qp_state);
             }
 
+            [[nodiscard]]
             constexpr Mtu getPathMtu() const {
                 return static_cast<Mtu>(path_mtu);
             }
@@ -1526,6 +1661,7 @@ namespace ibv {
                 this->path_mtu = static_cast<ibv_mtu>(path_mtu);
             }
 
+            [[nodiscard]]
             constexpr MigrationState getPathMigState() const {
                 return static_cast<MigrationState>(path_mig_state);
             }
@@ -1534,6 +1670,7 @@ namespace ibv {
                 this->path_mig_state = static_cast<ibv_mig_state>(path_mig_state);
             }
 
+            [[nodiscard]]
             constexpr uint32_t getQkey() const {
                 return qkey;
             }
@@ -1542,6 +1679,7 @@ namespace ibv {
                 this->qkey = qkey;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getRqPsn() const {
                 return rq_psn;
             }
@@ -1550,6 +1688,7 @@ namespace ibv {
                 this->rq_psn = rq_psn;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getSqPsn() const {
                 return sq_psn;
             }
@@ -1558,6 +1697,7 @@ namespace ibv {
                 this->sq_psn = sq_psn;
             }
 
+            [[nodiscard]]
             constexpr uint32_t getDestQpNum() const {
                 return dest_qp_num;
             }
@@ -1566,6 +1706,7 @@ namespace ibv {
                 this->dest_qp_num = dest_qp_num;
             }
 
+            [[nodiscard]]
             constexpr bool hasQpAccessFlags(AccessFlag flag) const {
                 const auto rawFlag = static_cast<ibv_access_flags>(flag);
                 return (qp_access_flags & rawFlag) == rawFlag;
@@ -1579,6 +1720,7 @@ namespace ibv {
                 this->qp_access_flags = raw;
             }
 
+            [[nodiscard]]
             const Capabilities &getCap() const {
                 return *reinterpret_cast<const Capabilities *>(&cap);
             }
@@ -1587,6 +1729,7 @@ namespace ibv {
                 this->cap = cap;
             }
 
+            [[nodiscard]]
             constexpr const ah::Attributes &getAhAttr() const {
                 return *static_cast<const ah::Attributes *>(&ah_attr);
             }
@@ -1595,6 +1738,7 @@ namespace ibv {
                 this->ah_attr = ah_attr;
             }
 
+            [[nodiscard]]
             constexpr const ah::Attributes &getAltAhAttr() const {
                 return *static_cast<const ah::Attributes *>(&alt_ah_attr);
             }
@@ -1603,6 +1747,7 @@ namespace ibv {
                 this->alt_ah_attr = alt_ah_attr;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getPkeyIndex() const {
                 return pkey_index;
             }
@@ -1611,6 +1756,7 @@ namespace ibv {
                 this->pkey_index = pkey_index;
             }
 
+            [[nodiscard]]
             constexpr uint16_t getAltPkeyIndex() const {
                 return alt_pkey_index;
             }
@@ -1619,6 +1765,7 @@ namespace ibv {
                 this->alt_pkey_index = alt_pkey_index;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getEnSqdAsyncNotify() const {
                 return en_sqd_async_notify;
             }
@@ -1627,6 +1774,7 @@ namespace ibv {
                 this->en_sqd_async_notify = en_sqd_async_notify;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getSqDraining() const {
                 return sq_draining;
             }
@@ -1635,6 +1783,7 @@ namespace ibv {
                 this->sq_draining = sq_draining;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getMaxRdAtomic() const {
                 return max_rd_atomic;
             }
@@ -1643,6 +1792,7 @@ namespace ibv {
                 this->max_rd_atomic = max_rd_atomic;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getMaxDestRdAtomic() const {
                 return max_dest_rd_atomic;
             }
@@ -1651,6 +1801,7 @@ namespace ibv {
                 this->max_dest_rd_atomic = max_dest_rd_atomic;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getMinRnrTimer() const {
                 return min_rnr_timer;
             }
@@ -1659,6 +1810,7 @@ namespace ibv {
                 this->min_rnr_timer = min_rnr_timer;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getPortNum() const {
                 return port_num;
             }
@@ -1667,6 +1819,7 @@ namespace ibv {
                 this->port_num = port_num;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getTimeout() const {
                 return timeout;
             }
@@ -1675,6 +1828,7 @@ namespace ibv {
                 this->timeout = timeout;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getRetryCnt() const {
                 return retry_cnt;
             }
@@ -1683,6 +1837,7 @@ namespace ibv {
                 this->retry_cnt = retry_cnt;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getRnrRetry() const {
                 return rnr_retry;
             }
@@ -1691,6 +1846,7 @@ namespace ibv {
                 this->rnr_retry = rnr_retry;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getAltPortNum() const {
                 return alt_port_num;
             }
@@ -1699,6 +1855,7 @@ namespace ibv {
                 this->alt_port_num = alt_port_num;
             }
 
+            [[nodiscard]]
             constexpr uint8_t getAltTimeout() const {
                 return alt_timeout;
             }
@@ -1748,6 +1905,7 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_qp", status);
             }
 
+            [[nodiscard]]
             constexpr uint32_t getNum() const {
                 return qp_num;
             }
@@ -1774,6 +1932,7 @@ namespace ibv {
                 checkStatus("ibv_query_qp", status);
             }
 
+            [[nodiscard]]
             std::tuple<Attributes, InitAttributes> query(std::initializer_list<AttrMask> queriedAttributes,
                                                          std::initializer_list<InitAttrMask> queriedInitAttributes) {
                 Attributes attributes;
@@ -1782,12 +1941,14 @@ namespace ibv {
                 return {attributes, initAttributes};
             }
 
+            [[nodiscard]]
             Attributes query(std::initializer_list<AttrMask> queriedAttributes) {
                 auto[attributes, initAttributes] = query(queriedAttributes, {});
                 std::ignore = initAttributes;
                 return attributes;
             }
 
+            [[nodiscard]]
             InitAttributes query(std::initializer_list<InitAttrMask> queriedInitAttributes) {
                 auto[attributes, initAttributes] = query({}, queriedInitAttributes);
                 std::ignore = attributes;
@@ -1806,6 +1967,7 @@ namespace ibv {
                 checkStatus("ibv_post_recv", status);
             }
 
+            [[nodiscard]]
             std::unique_ptr<flow::Flow> createFlow(flow::Attributes &attr) {
                 auto res = ibv_create_flow(this, reinterpret_cast<ibv_flow_attr *>(&attr));
                 checkPtr("ibv_create_flow", res);
@@ -1813,6 +1975,7 @@ namespace ibv {
             }
 
             /// @return the new rkey
+            [[nodiscard]]
             uint32_t bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info) {
                 const auto status = ibv_bind_mw(this, reinterpret_cast<ibv_mw *>(&mw),
                                                 reinterpret_cast<ibv_mw_bind *>(&info));
@@ -1864,10 +2027,13 @@ namespace ibv {
         };
 
         struct AsyncEvent : private ibv_async_event {
+
+            [[nodiscard]]
             constexpr Type getType() const {
                 return static_cast<Type>(event_type);
             }
 
+            [[nodiscard]]
             constexpr Cause getCause() const {
                 switch (getType()) {
                     case Type::QP_FATAL:
@@ -1897,21 +2063,25 @@ namespace ibv {
                 }
             }
 
+            [[nodiscard]]
             queuepair::QueuePair *getCausingQp() const {
                 checkCause(Cause::QueuePair);
                 return reinterpret_cast<queuepair::QueuePair *>(element.qp);
             }
 
+            [[nodiscard]]
             completions::CompletionQueue *getCausingCq() const {
                 checkCause(Cause::CompletionQueue);
                 return reinterpret_cast<completions::CompletionQueue *>(element.cq);
             }
 
+            [[nodiscard]]
             srq::SharedReceiveQueue *getCausingSrq() const {
                 checkCause(Cause::SharedReceiveQueue);
                 return reinterpret_cast<srq::SharedReceiveQueue *>(element.srq);
             }
 
+            [[nodiscard]]
             constexpr int getCausingPort() const {
                 checkCause(Cause::Port);
                 return element.port_num;
@@ -1939,14 +2109,17 @@ namespace ibv {
                 checkStatusNoThrow("ibv_dealloc_pd", status);
             }
 
+            [[nodiscard]]
             context::Context *getContext() const {
                 return reinterpret_cast<context::Context *>(context);
             }
 
+            [[nodiscard]]
             constexpr uint32_t getHandle() const {
                 return handle;
             }
 
+            [[nodiscard]]
             std::unique_ptr<memoryregion::MemoryRegion>
             registerMemoryRegion(void *addr, size_t length, std::initializer_list<AccessFlag> flags) {
                 using MR = memoryregion::MemoryRegion;
@@ -1959,6 +2132,7 @@ namespace ibv {
                 return std::unique_ptr<MR>(reinterpret_cast<MR *>(mr));
             }
 
+            [[nodiscard]]
             std::unique_ptr<memorywindow::MemoryWindow>
             allocMemoryWindow(memorywindow::Type type) {
                 using MW = memorywindow::MemoryWindow;
@@ -1967,6 +2141,7 @@ namespace ibv {
                 return std::unique_ptr<MW>(reinterpret_cast<MW *>(mw));
             }
 
+            [[nodiscard]]
             std::unique_ptr<srq::SharedReceiveQueue> createSrq(srq::InitAttributes &initAttributes) {
                 using SRQ = srq::SharedReceiveQueue;
                 const auto srq = ibv_create_srq(this, reinterpret_cast<ibv_srq_init_attr *>(&initAttributes));
@@ -1974,6 +2149,7 @@ namespace ibv {
                 return std::unique_ptr<SRQ>(reinterpret_cast<SRQ *>(srq));
             }
 
+            [[nodiscard]]
             std::unique_ptr<queuepair::QueuePair> createQueuePair(queuepair::InitAttributes &initAttributes) {
                 using QP = queuepair::QueuePair;
                 const auto qp = ibv_create_qp(this, reinterpret_cast<ibv_qp_init_attr *>(&initAttributes));
@@ -1981,6 +2157,7 @@ namespace ibv {
                 return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
             }
 
+            [[nodiscard]]
             std::unique_ptr<ah::AddressHandle> createAddressHandle(ah::Attributes attributes) {
                 using AH = ah::AddressHandle;
                 const auto ah = ibv_create_ah(this, reinterpret_cast<ibv_ah_attr *>(&attributes));
@@ -1988,6 +2165,7 @@ namespace ibv {
                 return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
             }
 
+            [[nodiscard]]
             std::unique_ptr<ah::AddressHandle>
             createAddressHandleFromWorkCompletion(workcompletion::WorkCompletion &wc, GlobalRoutingHeader *grh,
                                                   uint8_t port_num) {
@@ -2011,10 +2189,12 @@ namespace ibv {
                 checkStatusNoThrow("ibv_close_device", status);
             }
 
+            [[nodiscard]]
             device::Device *getDevice() const {
                 return reinterpret_cast<device::Device *>(device);
             }
 
+            [[nodiscard]]
             device::Attributes queryAttributes() {
                 device::Attributes res;
                 const auto status = ibv_query_device(this, reinterpret_cast<ibv_device_attr *>(&res));
@@ -2022,6 +2202,7 @@ namespace ibv {
                 return res;
             }
 
+            [[nodiscard]]
             port::Attributes queryPort(uint8_t port) {
                 port::Attributes res;
                 const auto status = ibv_query_port(this, port, reinterpret_cast<ibv_port_attr *>(&res));
@@ -2029,6 +2210,7 @@ namespace ibv {
                 return res;
             }
 
+            [[nodiscard]]
             event::AsyncEvent getAsyncEvent() {
                 event::AsyncEvent res{};
                 const auto status = ibv_get_async_event(this, reinterpret_cast<ibv_async_event *>(&res));
@@ -2036,6 +2218,7 @@ namespace ibv {
                 return res;
             }
 
+            [[nodiscard]]
             Gid queryGid(uint8_t port_num, int index) {
                 Gid res{};
                 const auto status = ibv_query_gid(this, port_num, index, reinterpret_cast<ibv_gid *>(&res));
@@ -2043,6 +2226,7 @@ namespace ibv {
                 return res;
             }
 
+            [[nodiscard]]
             uint16_t queryPkey(uint8_t port_num, int index) {
                 uint16_t res{};
                 const auto status = ibv_query_pkey(this, port_num, index, &res);
@@ -2050,6 +2234,7 @@ namespace ibv {
                 return res;
             }
 
+            [[nodiscard]]
             std::unique_ptr<protectiondomain::ProtectionDomain> allocProtectionDomain() {
                 using PD = protectiondomain::ProtectionDomain;
                 const auto pd = ibv_alloc_pd(this);
@@ -2057,6 +2242,7 @@ namespace ibv {
                 return std::unique_ptr<PD>(reinterpret_cast<PD *>(pd));
             }
 
+            [[nodiscard]]
             std::unique_ptr<xrcd::ExtendedConnectionDomain> openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
                 using XRCD = xrcd::ExtendedConnectionDomain;
                 const auto xrcd = ibv_open_xrcd(this, reinterpret_cast<ibv_xrcd_init_attr *>(&attr));
@@ -2064,6 +2250,7 @@ namespace ibv {
                 return std::unique_ptr<XRCD>(reinterpret_cast<XRCD *>(xrcd));
             }
 
+            [[nodiscard]]
             std::unique_ptr<completions::CompletionEventChannel> createCompletionEventChannel() {
                 using CEC = completions::CompletionEventChannel;
                 const auto compChannel = ibv_create_comp_channel(this);
@@ -2071,6 +2258,7 @@ namespace ibv {
                 return std::unique_ptr<CEC>(reinterpret_cast<CEC *>(compChannel));
             }
 
+            [[nodiscard]]
             std::unique_ptr<completions::CompletionQueue>
             createCompletionQueue(int cqe, void *context, completions::CompletionEventChannel &cec,
                                   int completionVector) {
@@ -2081,6 +2269,7 @@ namespace ibv {
                 return std::unique_ptr<CQ>(reinterpret_cast<CQ *>(cq));
             }
 
+            [[nodiscard]]
             std::unique_ptr<queuepair::QueuePair> openSharableQueuePair(queuepair::OpenAttributes &openAttributes) {
                 using QP = queuepair::QueuePair;
                 const auto qp = ibv_open_qp(this, reinterpret_cast<ibv_qp_open_attr *>(&openAttributes));
@@ -2096,6 +2285,7 @@ namespace ibv {
                 checkStatus("ibv_init_ah_from_wc", status);
             }
 
+            [[nodiscard]]
             ah::Attributes getAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
                                                              GlobalRoutingHeader *grh) {
                 ah::Attributes attributes;
@@ -2105,6 +2295,7 @@ namespace ibv {
         };
     } // namespace context
 
+    [[nodiscard]]
     inline uint32_t incRkey(uint32_t rkey) {
         return ibv_inc_rkey(rkey);
     }
