@@ -1254,6 +1254,15 @@ namespace ibv {
             constexpr Send() {
                 SendWr::setOpcode(Opcode::SEND);
             }
+
+            void setUDAddressHandle(ah::AddressHandle &ah) {
+                getWr().ud.ah = reinterpret_cast<ibv_ah *>(&ah);
+            }
+
+            constexpr void setUDRemoteQueue(uint32_t qpn, uint32_t qkey) {
+                getWr().ud.remote_qpn = qpn;
+                getWr().ud.remote_qkey = qkey;
+            }
         };
 
         struct SendWithImm : SendWr {
@@ -2243,7 +2252,8 @@ namespace ibv {
             }
 
             [[nodiscard]]
-            std::unique_ptr<xrcd::ExtendedConnectionDomain> openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
+            std::unique_ptr<xrcd::ExtendedConnectionDomain>
+            openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
                 using XRCD = xrcd::ExtendedConnectionDomain;
                 const auto xrcd = ibv_open_xrcd(this, reinterpret_cast<ibv_xrcd_init_attr *>(&attr));
                 checkPtr("ibv_open_xrcd", xrcd);
