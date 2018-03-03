@@ -9,6 +9,7 @@
 #include <memory>
 #include <sstream>
 #include <type_traits>
+#include <algorithm>
 
 namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
@@ -990,7 +991,7 @@ namespace ibv {
         };
 
         class DeviceList {
-            Device **devices;
+            Device **devices = nullptr;
             int num_devices = 0;
 
         public:
@@ -1001,12 +1002,19 @@ namespace ibv {
             }
 
             ~DeviceList() {
-                ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
+                if (devices != nullptr) {
+                    ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
+                }
             }
 
             DeviceList(const DeviceList &) = delete;
 
             DeviceList &operator=(const DeviceList &) = delete;
+
+            DeviceList(DeviceList &&other) noexcept {
+                std::swap(devices, other.devices);
+                std::swap(num_devices, other.num_devices);
+            }
 
             [[nodiscard]]
             constexpr Device **begin() {
