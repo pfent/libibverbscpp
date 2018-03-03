@@ -515,15 +515,19 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_cq", status);
             }
 
+            /// Resize the CompletionQueue to have at last newCqe entries
             void resize(int newCqe) {
                 const auto status = ibv_resize_cq(this, newCqe);
                 checkStatus("ibv_resize_cq", status);
             }
 
+            /// Acknowledge nEvents events on the CompletionQueue
             void ackEvents(unsigned int nEvents) {
                 ibv_ack_cq_events(this, nEvents);
             }
 
+            /// Poll the CompletionQueue for the next numEntries WorkCompletions and put them into resultArray
+            /// @returns the number of completions found
             [[nodiscard]]
             int poll(int numEntries, workcompletion::WorkCompletion *resultArray) {
                 const auto res = ibv_poll_cq(this, numEntries, reinterpret_cast<ibv_wc *>(resultArray));
@@ -531,6 +535,8 @@ namespace ibv {
                 return res;
             }
 
+            /// Request completion notification event on this CompletionQueue for the associated CompletionEventChannel
+            /// @param solicitedOnly if the events should only be produced for workrequests with Flags::SOLICITED
             void requestNotify(bool solicitedOnly) {
                 const auto status = ibv_req_notify_cq(this, static_cast<int>(solicitedOnly));
                 checkStatus("ibv_req_notify_cq", status);
@@ -545,6 +551,8 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_comp_channel", status);
             }
 
+            /// Wait for the next completion event in this CompletionEventChannel
+            /// @returns the CompletionQueue, that got the event and the CompletionQueues QP context @see setQpContext
             [[nodiscard]]
             std::tuple<CompletionQueue *, void *> getEvent() {
                 CompletionQueue *cqRet;
@@ -971,6 +979,7 @@ namespace ibv {
                 return ibv_get_device_guid(this);
             }
 
+            /// Open a RDMA device context
             [[nodiscard]]
             std::unique_ptr<context::Context> open() {
                 using Ctx = context::Context;
@@ -985,6 +994,7 @@ namespace ibv {
             int num_devices = 0;
 
         public:
+            /// Get a list of available RDMA devices
             DeviceList() {
                 devices = reinterpret_cast<Device **>(ibv_get_device_list(&num_devices));
                 checkPtr("ibv_get_device_list", devices);
@@ -996,7 +1006,7 @@ namespace ibv {
 
             DeviceList(const DeviceList &) = delete;
 
-            DeviceList &operator=(DeviceList &) = delete;
+            DeviceList &operator=(const DeviceList &) = delete;
 
             [[nodiscard]]
             constexpr Device **begin() {
@@ -1119,8 +1129,10 @@ namespace ibv {
                 return RemoteAddress{reinterpret_cast<uint64_t>(addr), rkey};
             }
 
-            void
-            reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain &newPd,
+            /// Reregister the MemoryRegion to modify the attribotes of an existing MemoryRegion,
+            /// reusing resources whenever possible
+            void // TODO: convenience functions for only setting parts
+            reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain *newPd,
                        void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
                 int changes = 0;
                 for (auto change : changeFlags) {
@@ -1131,7 +1143,7 @@ namespace ibv {
                     access |= static_cast<ibv_access_flags>(accessFlag);
                 }
                 const auto status =
-                        ibv_rereg_mr(this, changes, reinterpret_cast<ibv_pd *> (&newPd), newAddr, newLength, access);
+                        ibv_rereg_mr(this, changes, reinterpret_cast<ibv_pd *>(newPd), newAddr, newLength, access);
 
                 if (status != 0) {
                     const auto res = static_cast<ReregErrorCode>(status);
@@ -1421,6 +1433,7 @@ namespace ibv {
                 checkStatusNoThrow("ibv_destroy_srq", status);
             }
 
+            /// Modify the attributes of the SharedReceiveQueue. Which attributes are specified in modifiedAttrs
             void modify(Attributes &attr, std::initializer_list<AttributeMask> modifiedAttrs) {
                 int modifiedMask = 0;
                 for (auto mod : modifiedAttrs) {
@@ -1431,11 +1444,13 @@ namespace ibv {
                 checkStatus("ibv_modify_srq", status);
             }
 
+            /// Query the current attributes of the SharedReceiveQueue and return them in res
             void query(Attributes &res) {
                 const auto status = ibv_query_srq(this, &res);
                 checkStatus("ibv_query_srq", status);
             }
 
+            /// Query the current attributes of the SharedReceiveQueue
             [[nodiscard]]
             Attributes query() {
                 Attributes res{};
@@ -1443,6 +1458,7 @@ namespace ibv {
                 return res;
             }
 
+            /// Query the associated SRQ number
             [[nodiscard]]
             uint32_t getNumber() {
                 uint32_t num = 0;
@@ -1451,6 +1467,8 @@ namespace ibv {
                 return num;
             }
 
+            /// Post Recv workrequests to this SharedReceiveQueue, which can possibly be chained
+            /// might throw and set the causing workrequest in badWr
             void postRecv(workrequest::Recv &wr, workrequest::Recv *&badWr) {
                 const auto status = ibv_post_srq_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
                                                       reinterpret_cast<ibv_recv_wr **>(&badWr));
@@ -1601,36 +1619,41 @@ namespace ibv {
         inline std::string to_string(MigrationState ms) {
             switch (ms) {
                 case MigrationState::MIGRATED:
-                    return " IBV_MIG_MIGRATED";
+                    return "IBV_MIG_MIGRATED";
                 case MigrationState::REARM:
-                    return " IBV_MIG_REARM";
+                    return "IBV_MIG_REARM";
                 case MigrationState::ARMED:
-                    return " IBV_MIG_ARMED";
+                    return "IBV_MIG_ARMED";
             }
             __builtin_unreachable();
         }
 
         struct Capabilities : public ibv_qp_cap {
+            /// Max number of outstanding workrequests in the sendqueue
             [[nodiscard]]
             constexpr uint32_t getMaxSendWr() const {
                 return max_send_wr;
             }
 
+            /// Max number of outstanding workrequests in the receivequeue
             [[nodiscard]]
             constexpr uint32_t getMaxRecvWr() const {
                 return max_recv_wr;
             }
 
+            /// Max number of scatter/gather elements of each workrequest in the sendqueue
             [[nodiscard]]
             constexpr uint32_t getMaxSendSge() const {
                 return max_send_sge;
             }
 
+            /// Max number of scatter/gather elements of each workrequest in the receivequeue
             [[nodiscard]]
             constexpr uint32_t getMaxRecvSge() const {
                 return max_recv_sge;
             }
 
+            /// Maximum size of workrequests which can be posted inline in the sendqueue with Flags::INLINE in bytes
             [[nodiscard]]
             constexpr uint32_t getMaxInlineData() const {
                 return max_inline_data;
@@ -1666,24 +1689,23 @@ namespace ibv {
         struct Attributes : private ibv_qp_attr {
             friend struct QueuePair;
 
+            /// The current QueuePair state
             [[nodiscard]]
             constexpr State getQpState() const {
                 return static_cast<State>(qp_state);
             }
 
+            /// Move the QueuePair to this state
             constexpr void setQpState(State qp_state) {
                 this->qp_state = static_cast<ibv_qp_state>(qp_state);
             }
 
-            [[nodiscard]]
-            constexpr State getCurQpState() const {
-                return static_cast<State>(cur_qp_state);
-            }
-
+            /// Assume this is the current QueuePair state
             constexpr void setCurQpState(State cur_qp_state) {
                 this->cur_qp_state = static_cast<ibv_qp_state>(cur_qp_state);
             }
 
+            /// The (RC/UC) path MTU
             [[nodiscard]]
             constexpr Mtu getPathMtu() const {
                 return static_cast<Mtu>(path_mtu);
@@ -1693,6 +1715,7 @@ namespace ibv {
                 this->path_mtu = static_cast<ibv_mtu>(path_mtu);
             }
 
+            /// The path migration state
             [[nodiscard]]
             constexpr MigrationState getPathMigState() const {
                 return static_cast<MigrationState>(path_mig_state);
@@ -1942,6 +1965,7 @@ namespace ibv {
                 return qp_num;
             }
 
+            /// Modify the attributes of the QueuePair, according to modifiedAttributes
             void modify(Attributes &attr, std::initializer_list<AttrMask> modifiedAttributes) {
                 int mask = 0;
                 for (auto mod : modifiedAttributes) {
@@ -1951,6 +1975,7 @@ namespace ibv {
                 checkStatus("ibv_modify_qp", status);
             }
 
+            ///
             void query(Attributes &attr, std::initializer_list<AttrMask> queriedAttributes,
                        InitAttributes &init_attr, std::initializer_list<InitAttrMask> queriedInitAttributes) {
                 int mask = 0;
