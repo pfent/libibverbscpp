@@ -1042,9 +1042,9 @@ namespace ibv {
                 case ReregErrorCode::INPUT:
                     return "IBV_REREG_MR_ERR_INPUT";
                 case ReregErrorCode::DONT_FORK_NEW:
-                    return " IBV_REREG_MR_ERR_DONT_FORK_NEW";
+                    return "IBV_REREG_MR_ERR_DONT_FORK_NEW";
                 case ReregErrorCode::DO_FORK_OLD:
-                    return " IBV_REREG_MR_ERR_DO_FORK_OLD";
+                    return "IBV_REREG_MR_ERR_DO_FORK_OLD";
                 case ReregErrorCode::CMD:
                     return "IBV_REREG_MR_ERR_CMD";
                 case ReregErrorCode::CMD_AND_DO_FORK_NEW:
@@ -1054,6 +1054,11 @@ namespace ibv {
         }
 
         struct Slice : public ibv_sge {
+        };
+
+        struct RemoteAddress {
+            uint64_t address;
+            uint32_t rkey;
         };
 
         struct MemoryRegion : private ibv_mr {
@@ -1107,6 +1112,11 @@ namespace ibv {
             [[nodiscard]]
             Slice getSlice(uint32_t offset, uint32_t sliceLength) {
                 return Slice{{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey}};
+            }
+
+            [[nodiscard]]
+            RemoteAddress getRemoteAddress() {
+                return RemoteAddress{reinterpret_cast<uint64_t>(addr), rkey};
             }
 
             void
@@ -1230,7 +1240,13 @@ namespace ibv {
 
         // internal
         struct Rdma : SendWr {
-            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
+            constexpr void setRemoteAddress(memoryregion::RemoteAddress remoteAddress) {
+                getWr().rdma.remote_addr = remoteAddress.address;
+                getWr().rdma.rkey = remoteAddress.rkey;
+            }
+
+            [[deprecated]]
+            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) {
                 getWr().rdma.remote_addr = remote_addr;
                 getWr().rdma.rkey = rkey;
             }
@@ -1281,7 +1297,13 @@ namespace ibv {
 
         // internal
         struct Atomic : SendWr {
-            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) { // TODO: structure for this
+            constexpr void setRemoteAddress(memoryregion::RemoteAddress remoteAddress) {
+                getWr().atomic.remote_addr = remoteAddress.address;
+                getWr().atomic.rkey = remoteAddress.rkey;
+            }
+
+            [[deprecated]]
+            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) {
                 getWr().atomic.remote_addr = remote_addr;
                 getWr().atomic.rkey = rkey;
             }
