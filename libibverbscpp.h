@@ -1342,7 +1342,8 @@ namespace ibv {
 
         template<class SendWorkRequest>
         class Simple : public SendWorkRequest {
-            static_assert(std::is_base_of<ibv_send_wr, SendWorkRequest>::value);
+            static_assert(std::is_base_of<SendWr, SendWorkRequest>::value or
+                          std::is_base_of<Recv, SendWorkRequest>::value);
 
             memoryregion::Slice slice{};
 
