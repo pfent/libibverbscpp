@@ -14,30 +14,30 @@ namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
     namespace {
         [[nodiscard]]
-        std::runtime_error exception(std::string_view function, int errnum) {
+        std::runtime_error exception(const char *function, int errnum) {
             return std::runtime_error(
                     std::string(function) + " failed with error " + std::to_string(errnum) + ": " + strerror(errnum));
         }
 
-        constexpr void check(std::string_view function, bool ok) {
+        constexpr void check(const char *function, bool ok) {
             if (not ok) {
                 throw exception(function, errno);
             }
         }
 
-        constexpr void checkStatus(std::string_view function, int status) {
+        constexpr void checkStatus(const char *function, int status) {
             if (status != 0) {
                 throw exception(function, status);
             }
         }
 
-        constexpr void checkPtr(std::string_view function, const void *ptr) {
+        constexpr void checkPtr(const char *function, const void *ptr) {
             if (ptr == nullptr) {
                 throw exception(function, errno);
             }
         }
 
-        constexpr void checkStatusNoThrow(std::string_view function, int status) noexcept {
+        constexpr void checkStatusNoThrow(const char *function, int status) noexcept {
             if (status != 0) {
                 std::clog << function << " failed with error " << std::to_string(status) << ": " << strerror(status);
             }
@@ -757,7 +757,7 @@ namespace ibv {
 
         struct Attributes : private ibv_device_attr {
             [[nodiscard]]
-            constexpr std::string_view getFwVer() const {
+            constexpr const char *getFwVer() const {
                 return fw_ver;
             }
 
@@ -962,8 +962,8 @@ namespace ibv {
             Device(const Device &) = delete;
 
             [[nodiscard]]
-            std::string_view getName() {
-                return std::string_view(ibv_get_device_name(this));
+            const char *getName() {
+                return ibv_get_device_name(this);
             }
 
             [[nodiscard]]
