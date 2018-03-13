@@ -627,102 +627,122 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_port_attr {
+            /// Logical port state
             [[nodiscard]]
             constexpr State getState() const {
                 return static_cast<State>(state);
             }
 
+            /// Max MTU supported by port
             [[nodiscard]]
             constexpr Mtu getMaxMtu() const {
                 return static_cast<Mtu>(max_mtu);
             }
 
+            /// Actual MTU
             [[nodiscard]]
             constexpr Mtu getActiveMtu() const {
                 return static_cast<Mtu>(active_mtu);
             }
 
+            /// Length of source GID table
             [[nodiscard]]
             constexpr int getGidTblLen() const {
                 return gid_tbl_len;
             }
 
+            /// test port capabilities
             [[nodiscard]]
             constexpr bool hasCapability(CapabilityFlag flag) {
                 const auto rawFlag = static_cast<ibv_port_cap_flags>(flag);
                 return (port_cap_flags & rawFlag) == rawFlag;
             }
 
+            /// Maximum message size
             [[nodiscard]]
             constexpr uint32_t getMaxMsgSize() const {
                 return max_msg_sz;
             }
 
+            /// Bad P_Key counter
             [[nodiscard]]
             constexpr uint32_t getBadPkeyCntr() const {
                 return bad_pkey_cntr;
             }
 
+            /// Q_Key violation counter
             [[nodiscard]]
             constexpr uint32_t getQkeyViolCntr() const {
                 return qkey_viol_cntr;
             }
 
+            /// Length of partition table
             [[nodiscard]]
             constexpr uint16_t getPkeyTblLen() const {
                 return pkey_tbl_len;
             }
 
+            /// Base port LID
             [[nodiscard]]
             constexpr uint16_t getLid() const {
                 return lid;
             }
 
+            /// SM LID
             [[nodiscard]]
             constexpr uint16_t getSmLid() const {
                 return sm_lid;
             }
 
+            /// LMC of LID
             [[nodiscard]]
             constexpr uint8_t getLmc() const {
                 return lmc;
             }
 
+            /// Maximum number of VLs
             [[nodiscard]]
             constexpr uint8_t getMaxVlNum() const {
                 return max_vl_num;
             }
 
+            /// SM service level
             [[nodiscard]]
             constexpr uint8_t getSmSl() const {
                 return sm_sl;
             }
 
+            /// Subnet propagation delay
             [[nodiscard]]
             constexpr uint8_t getSubnetTimeout() const {
                 return subnet_timeout;
             }
 
+            /// Type of initialization performed by SM
             [[nodiscard]]
             constexpr uint8_t getInitTypeReply() const {
                 return init_type_reply;
             }
 
+            /// Currently active link width
             [[nodiscard]]
             constexpr uint8_t getActiveWidth() const {
                 return active_width;
             }
 
+            /// Currently active link speed
             [[nodiscard]]
             constexpr uint8_t getActiveSpeed() const {
                 return active_speed;
             }
 
+            /// Physical port state
             [[nodiscard]]
             constexpr uint8_t getPhysState() const {
                 return phys_state;
             }
 
+            /// link layer protocol of the port
             [[nodiscard]]
             constexpr uint8_t getLinkLayer() const {
                 return link_layer;
@@ -1493,8 +1513,8 @@ namespace ibv {
         };
 
         enum class OpenFlags : int {
-            CREAT = O_CREAT,
-            EXCL = O_EXCL
+            CREAT = O_CREAT, /// The XRCD should be created, if it does not already exists
+            EXCL = O_EXCL /// Open the XRCD exclusively. Opening will fail if not possible
         };
 
         struct InitAttributes : private ibv_xrcd_init_attr {
@@ -1506,6 +1526,7 @@ namespace ibv {
                 this->comp_mask = newMask;
             }
 
+            /// If fd equals -1, no inode is associated with the XRCD
             constexpr void setFd(int fd) {
                 this->fd = fd;
             }
@@ -2062,25 +2083,25 @@ namespace ibv {
 
     namespace event {
         enum class Type : std::underlying_type_t<ibv_event_type> {
-            CQ_ERR = IBV_EVENT_CQ_ERR,
-            QP_FATAL = IBV_EVENT_QP_FATAL,
-            QP_REQ_ERR = IBV_EVENT_QP_REQ_ERR,
-            QP_ACCESS_ERR = IBV_EVENT_QP_ACCESS_ERR,
-            COMM_EST = IBV_EVENT_COMM_EST,
-            SQ_DRAINED = IBV_EVENT_SQ_DRAINED,
-            PATH_MIG = IBV_EVENT_PATH_MIG,
-            PATH_MIG_ERR = IBV_EVENT_PATH_MIG_ERR,
-            DEVICE_FATAL = IBV_EVENT_DEVICE_FATAL,
-            PORT_ACTIVE = IBV_EVENT_PORT_ACTIVE,
-            PORT_ERR = IBV_EVENT_PORT_ERR,
-            LID_CHANGE = IBV_EVENT_LID_CHANGE,
-            PKEY_CHANGE = IBV_EVENT_PKEY_CHANGE,
-            SM_CHANGE = IBV_EVENT_SM_CHANGE,
-            SRQ_ERR = IBV_EVENT_SRQ_ERR,
-            SRQ_LIMIT_REACHED = IBV_EVENT_SRQ_LIMIT_REACHED,
-            QP_LAST_WQE_REACHED = IBV_EVENT_QP_LAST_WQE_REACHED,
-            CLIENT_REREGISTER = IBV_EVENT_CLIENT_REREGISTER,
-            GID_CHANGE = IBV_EVENT_GID_CHANGE
+            CQ_ERR = IBV_EVENT_CQ_ERR, /// CQ is in error (CQ overrun)
+            QP_FATAL = IBV_EVENT_QP_FATAL, /// Error occurred on a QP and it transitioned to error state
+            QP_REQ_ERR = IBV_EVENT_QP_REQ_ERR, /// Invalid Request Local Work Queue Error
+            QP_ACCESS_ERR = IBV_EVENT_QP_ACCESS_ERR, /// Local access violation error
+            COMM_EST = IBV_EVENT_COMM_EST, /// Communication was established on a QP
+            SQ_DRAINED = IBV_EVENT_SQ_DRAINED, /// Send Queue was drained of outstanding messages in progress
+            PATH_MIG = IBV_EVENT_PATH_MIG, /// A connection has migrated to the alternate path
+            PATH_MIG_ERR = IBV_EVENT_PATH_MIG_ERR, /// A connection failed to migrate to the alternate path
+            DEVICE_FATAL = IBV_EVENT_DEVICE_FATAL, /// CA is in FATAL state
+            PORT_ACTIVE = IBV_EVENT_PORT_ACTIVE, /// Link became active on a port
+            PORT_ERR = IBV_EVENT_PORT_ERR, /// Link became unavailable on a port
+            LID_CHANGE = IBV_EVENT_LID_CHANGE, /// LID was changed on a port
+            PKEY_CHANGE = IBV_EVENT_PKEY_CHANGE, /// P_Key table was changed on a port
+            SM_CHANGE = IBV_EVENT_SM_CHANGE, /// SM was changed on a port
+            SRQ_ERR = IBV_EVENT_SRQ_ERR, /// Error occurred on an SRQ
+            SRQ_LIMIT_REACHED = IBV_EVENT_SRQ_LIMIT_REACHED, /// SRQ limit was reached
+            QP_LAST_WQE_REACHED = IBV_EVENT_QP_LAST_WQE_REACHED, /// Last WQE Reached on a QP associated with an SRQ
+            CLIENT_REREGISTER = IBV_EVENT_CLIENT_REREGISTER, /// SM sent a CLIENT_REREGISTER request to a port
+            GID_CHANGE = IBV_EVENT_GID_CHANGE /// GID table was changed on a port
         };
 
         enum class Cause {
@@ -2230,6 +2251,7 @@ namespace ibv {
                 return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
             }
 
+            /// Create an AddressHandle from a work completion
             [[nodiscard]]
             std::unique_ptr<ah::AddressHandle>
             createAddressHandleFromWorkCompletion(workcompletion::WorkCompletion &wc, GlobalRoutingHeader *grh,
@@ -2259,6 +2281,7 @@ namespace ibv {
                 return reinterpret_cast<device::Device *>(device);
             }
 
+
             [[nodiscard]]
             device::Attributes queryAttributes() {
                 device::Attributes res;
@@ -2267,6 +2290,7 @@ namespace ibv {
                 return res;
             }
 
+            /// query port Attributes of port port
             [[nodiscard]]
             port::Attributes queryPort(uint8_t port) {
                 port::Attributes res;
@@ -2275,6 +2299,8 @@ namespace ibv {
                 return res;
             }
 
+            /// Wait for the next async event of the device
+            /// This event must be acknowledged using `event.ack()`
             [[nodiscard]]
             event::AsyncEvent getAsyncEvent() {
                 event::AsyncEvent res{};
@@ -2283,6 +2309,7 @@ namespace ibv {
                 return res;
             }
 
+            /// Query the Infiniband port's GID table in entry index
             [[nodiscard]]
             Gid queryGid(uint8_t port_num, int index) {
                 Gid res{};
@@ -2291,6 +2318,7 @@ namespace ibv {
                 return res;
             }
 
+            /// Query the Infiniband port's P_Key table in entry index
             [[nodiscard]]
             uint16_t queryPkey(uint8_t port_num, int index) {
                 uint16_t res{};
@@ -2299,6 +2327,7 @@ namespace ibv {
                 return res;
             }
 
+            /// Allocate a ProtectionDomain for the device
             [[nodiscard]]
             std::unique_ptr<protectiondomain::ProtectionDomain> allocProtectionDomain() {
                 using PD = protectiondomain::ProtectionDomain;
@@ -2307,6 +2336,7 @@ namespace ibv {
                 return std::unique_ptr<PD>(reinterpret_cast<PD *>(pd));
             }
 
+            /// open an XRC protection domain
             [[nodiscard]]
             std::unique_ptr<xrcd::ExtendedConnectionDomain>
             openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
@@ -2316,6 +2346,7 @@ namespace ibv {
                 return std::unique_ptr<XRCD>(reinterpret_cast<XRCD *>(xrcd));
             }
 
+            /// Create a completion event channel for the device
             [[nodiscard]]
             std::unique_ptr<completions::CompletionEventChannel> createCompletionEventChannel() {
                 using CEC = completions::CompletionEventChannel;
@@ -2324,6 +2355,13 @@ namespace ibv {
                 return std::unique_ptr<CEC>(reinterpret_cast<CEC *>(compChannel));
             }
 
+            /// Create a CompletionQueue with at last cqe entries for the RDMA device
+            /// @cqe - Minimum number of entries required for CQ
+            /// @cq_context - Consumer-supplied context returned for completion events
+            /// @channel - Completion channel where completion events will be queued.
+            /// May be NULL if completion events will not be used.
+            /// @comp_vector - Completion vector used to signal completion events.
+            /// Must be >= 0 and < context->num_comp_vectors.
             [[nodiscard]]
             std::unique_ptr<completions::CompletionQueue>
             createCompletionQueue(int cqe, void *context, completions::CompletionEventChannel &cec,
@@ -2335,6 +2373,7 @@ namespace ibv {
                 return std::unique_ptr<CQ>(reinterpret_cast<CQ *>(cq));
             }
 
+            /// Open a shareable QueuePair
             [[nodiscard]]
             std::unique_ptr<queuepair::QueuePair> openSharableQueuePair(queuepair::OpenAttributes &openAttributes) {
                 using QP = queuepair::QueuePair;
@@ -2343,6 +2382,13 @@ namespace ibv {
                 return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
             }
 
+            /// Initialize AddressHandle Attributes from a WorkCompletion wc
+            /// @port_num: Port on which the received message arrived.
+            /// @wc: Work completion associated with the received message.
+            /// @grh: References the received global route header.  This parameter is ignored unless the work completion
+            /// indicates that the GRH is valid.
+            /// @ah_attr: Returned attributes that can be used when creating an address handle for replying to the
+            /// message.
             void initAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
                                                     GlobalRoutingHeader *grh, ah::Attributes &attributes) {
                 const auto status = ibv_init_ah_from_wc(this, port_num, reinterpret_cast<ibv_wc *>(&wc),
@@ -2351,9 +2397,10 @@ namespace ibv {
                 checkStatus("ibv_init_ah_from_wc", status);
             }
 
+            /// Create new AddressHandle Attributes from a WorkCompletion
             [[nodiscard]]
             ah::Attributes getAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
-                                                             GlobalRoutingHeader *grh) {
+                                                             GlobalRoutingHeader *grh = nullptr) {
                 ah::Attributes attributes;
                 initAhAttributesFromWorkCompletion(port_num, wc, grh, attributes);
                 return attributes;
@@ -2361,11 +2408,15 @@ namespace ibv {
         };
     } // namespace context
 
+    /// Increase the 8 lsb in the given rkey
     [[nodiscard]]
     inline uint32_t incRkey(uint32_t rkey) {
         return ibv_inc_rkey(rkey);
     }
 
+    /// Prepare data structures so that fork() may be used safely. If this function is not called or returns a non-zero
+    /// status, then libibverbs data structures are not fork()-safe and the effect of an application calling fork()
+    /// is undefined.
     inline void forkInit() {
         const auto status = ibv_fork_init();
         checkStatus("ibv_fork_init", status);
