@@ -65,11 +65,11 @@ namespace ibv {
 
     enum class AccessFlag : std::underlying_type_t<ibv_access_flags> {
         LOCAL_WRITE = IBV_ACCESS_LOCAL_WRITE,
-        REMOTE_WRITE = IBV_ACCESS_REMOTE_WRITE,
-        REMOTE_READ = IBV_ACCESS_REMOTE_READ,
-        REMOTE_ATOMIC = IBV_ACCESS_REMOTE_ATOMIC,
+        REMOTE_WRITE = IBV_ACCESS_REMOTE_WRITE, /// Enable Remote Write Access. Requires local write access to the MR
+        REMOTE_READ = IBV_ACCESS_REMOTE_READ, /// Enable Remote Read Access
+        REMOTE_ATOMIC = IBV_ACCESS_REMOTE_ATOMIC, /// Enable Remote Atomic Operation Access (if supported). Requires local write access to the MR
         MW_BIND = IBV_ACCESS_MW_BIND,
-        ZERO_BASED = IBV_ACCESS_ZERO_BASED,
+        ZERO_BASED = IBV_ACCESS_ZERO_BASED, /// If set, the address set on the 'remote_addr' field on the WR will be an offset from the MW's start address.
         ON_DEMAND = IBV_ACCESS_ON_DEMAND
     };
 
@@ -120,26 +120,31 @@ namespace ibv {
     };
 
     struct GlobalRoute : private ibv_global_route {
+        /// Destination GID or MGID
         [[nodiscard]]
         const Gid &getDgid() const {
             return *reinterpret_cast<const Gid *>(&dgid);
         }
 
+        /// Flow label
         [[nodiscard]]
         uint32_t getFlowLabel() const {
             return flow_label;
         }
 
+        /// Source GID index
         [[nodiscard]]
         uint8_t getSgidIndex() const {
             return sgid_index;
         }
 
+        /// Hop limit
         [[nodiscard]]
         uint8_t getHopLimit() const {
             return hop_limit;
         }
 
+        /// Traffic class
         [[nodiscard]]
         uint8_t getTrafficClass() const {
             return traffic_class;
@@ -210,54 +215,9 @@ namespace ibv {
         struct Attributes;
     } // namespace queuepair
 
-    namespace memorywindow {
-        enum class Type : std::underlying_type_t<ibv_mw_type> {
-            TYPE_1 = IBV_MW_TYPE_1,
-            TYPE_2 = IBV_MW_TYPE_2
-        };
-
-        class BindInfo : ibv_mw_bind_info {
-            // TODO
-        };
-
-        class Bind : ibv_mw_bind {
-            // TODO
-        };
-
-        struct MemoryWindow : private ibv_mw {
-            MemoryWindow(const MemoryWindow &) = delete; // Can't be constructed
-
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_dealloc_mw(reinterpret_cast<ibv_mw *>(ptr));
-                checkStatusNoThrow("ibv_dealloc_mw", status);
-            }
-
-            [[nodiscard]]
-            context::Context *getContext() const {
-                return reinterpret_cast<context::Context *>(context);
-            }
-
-            [[nodiscard]]
-            protectiondomain::ProtectionDomain *getPd() const {
-                return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
-            }
-
-            [[nodiscard]]
-            constexpr uint32_t getRkey() const {
-                return rkey;
-            }
-
-            [[nodiscard]]
-            constexpr uint32_t getHandle() const {
-                return handle;
-            }
-
-            [[nodiscard]]
-            constexpr Type getType() {
-                return static_cast<Type>(type);
-            }
-        };
-    } // namespace memorywindow
+    namespace memoryregion {
+        struct MemoryRegion;
+    } // namespace memoryregion
 
     namespace workcompletion {
         enum class Status : std::underlying_type_t<ibv_wc_status> {
@@ -431,65 +391,79 @@ namespace ibv {
         struct Attributes : private ibv_ah_attr {
             friend struct queuepair::Attributes;
 
+            /// Global Routing Header (GRH) attributes
             [[nodiscard]]
             const GlobalRoute &getGrh() const {
                 return *reinterpret_cast<const GlobalRoute *>(&grh);
             }
 
+            /// Global Routing Header (GRH) attributes
             constexpr void setGrh(const GlobalRoute &grh) {
                 this->grh = *reinterpret_cast<const ibv_global_route *>(&grh);
             }
 
+            /// Destination LID
             [[nodiscard]]
             constexpr uint16_t getDlid() const {
                 return dlid;
             }
 
+            /// Destination LID
             constexpr void setDlid(uint16_t dlid) {
                 this->dlid = dlid;
             }
 
+            /// Service Level
             [[nodiscard]]
             constexpr uint8_t getSl() const {
                 return sl;
             }
 
+            /// Service Level
             constexpr void setSl(uint8_t sl) {
                 this->sl = sl;
             }
 
+            /// Source path bits
             [[nodiscard]]
             constexpr uint8_t getSrcPathBits() const {
                 return src_path_bits;
             }
 
+            /// Source path bits
             constexpr void setSrcPathBits(uint8_t src_path_bits) {
                 this->src_path_bits = src_path_bits;
             }
 
+            /// Maximum static rate
             [[nodiscard]]
             constexpr uint8_t getStaticRate() const {
                 return static_rate;
             }
 
+            /// Maximum static rate
             constexpr void setStaticRate(uint8_t static_rate) {
                 this->static_rate = static_rate;
             }
 
+            /// GRH attributes are valid
             [[nodiscard]]
             constexpr bool getIsGlobal() const {
                 return static_cast<bool>(is_global);
             }
 
+            /// GRH attributes are valid
             constexpr void setIsGlobal(bool is_global) {
                 this->is_global = static_cast<uint8_t>(is_global);
             }
 
+            /// Physical port number
             [[nodiscard]]
             constexpr uint8_t getPortNum() const {
                 return port_num;
             }
 
+            /// Physical port number
             constexpr void setPortNum(uint8_t port_num) {
                 this->port_num = port_num;
             }
@@ -785,202 +759,242 @@ namespace ibv {
         };
 
         struct Attributes : private ibv_device_attr {
+            /// The Firmware verssion
             [[nodiscard]]
             constexpr const char *getFwVer() const {
                 return fw_ver;
             }
 
+            /// Node GUID (in network byte order)
             [[nodiscard]]
             constexpr uint64_t getNodeGuid() const {
                 return node_guid;
             }
 
+            /// System image GUID (in network byte order)
             [[nodiscard]]
             constexpr uint64_t getSysImageGuid() const {
                 return sys_image_guid;
             }
 
+            /// Largest contiguous block that can be registered
             [[nodiscard]]
             constexpr uint64_t getMaxMrSize() const {
                 return max_mr_size;
             }
 
+            /// Supported memory shift sizes
             [[nodiscard]]
             constexpr uint64_t getPageSizeCap() const {
                 return page_size_cap;
             }
 
+            /// Vendor ID, per IEEE
             [[nodiscard]]
             constexpr uint32_t getVendorId() const {
                 return vendor_id;
             }
 
+            /// Vendor supplied part ID
             [[nodiscard]]
             constexpr uint32_t getVendorPartId() const {
                 return vendor_part_id;
             }
 
+            /// Hardware version
             [[nodiscard]]
             constexpr uint32_t getHwVer() const {
                 return hw_ver;
             }
 
+            /// Maximum number of supported QPs
             [[nodiscard]]
             constexpr int getMaxQp() const {
                 return max_qp;
             }
 
+            /// Maximum number of outstanding WR on any work queue
             [[nodiscard]]
             constexpr int getMaxQpWr() const {
                 return max_qp_wr;
             }
 
+            /// Check for a capability
             [[nodiscard]]
             constexpr bool hasCapability(CapabilityFlag flag) const {
                 const auto rawFlag = static_cast<ibv_device_cap_flags>(flag);
                 return (device_cap_flags & rawFlag) == rawFlag;
             }
 
+            /// Maximum number of s/g per WR for SQ & RQ of QP for non RDMA Read operations
             [[nodiscard]]
             constexpr int getMaxSge() const {
                 return max_sge;
             }
 
+            /// Maximum number of s/g per WR for RDMA Read operations
             [[nodiscard]]
             constexpr int getMaxSgeRd() const {
                 return max_sge_rd;
             }
 
+            /// Maximum number of supported CQs
             [[nodiscard]]
             constexpr int getMaxCq() const {
                 return max_cq;
             }
 
+            /// Maximum number of CQE capacity per CQ
             [[nodiscard]]
             constexpr int getMaxCqe() const {
                 return max_cqe;
             }
 
+            /// Maximum number of supported MRs
             [[nodiscard]]
             constexpr int getMaxMr() const {
                 return max_mr;
             }
 
+            /// Maximum number of supported PDs
             [[nodiscard]]
             constexpr int getMaxPd() const {
                 return max_pd;
             }
 
+            /// Maximum number of RDMA Read & Atomic operations that can be outstanding per QP
             [[nodiscard]]
             constexpr int getMaxQpRdAtom() const {
                 return max_qp_rd_atom;
             }
 
+            /// Maximum number of RDMA Read & Atomic operations that can be outstanding per EEC
             [[nodiscard]]
             constexpr int getMaxEeRdAtom() const {
                 return max_ee_rd_atom;
             }
 
+            /// Maximum number of resources used for RDMA Read & Atomic operations by this HCA as the Target
             [[nodiscard]]
             constexpr int getMaxResRdAtom() const {
                 return max_res_rd_atom;
             }
 
+            /// Maximum depth per QP for initiation of RDMA Read & Atomic operations
             [[nodiscard]]
             constexpr int getMaxQpInitRdAtom() const {
                 return max_qp_init_rd_atom;
             }
 
+            /// Maximum depth per EEC for initiation of RDMA Read & Atomic operations
             [[nodiscard]]
             constexpr int getMaxEeInitRdAtom() const {
                 return max_ee_init_rd_atom;
             }
 
+            /// Atomic operations support level
             [[nodiscard]]
             constexpr AtomicCapabilities getAtomicCap() const {
                 return static_cast<AtomicCapabilities>(atomic_cap);
             }
 
+            /// Maximum number of supported EE contexts
             [[nodiscard]]
             constexpr int getMaxEe() const {
                 return max_ee;
             }
 
+            /// Maximum number of supported RD domains
             [[nodiscard]]
             constexpr int getMaxRdd() const {
                 return max_rdd;
             }
 
+            /// Maximum number of supported MWs
             [[nodiscard]]
             constexpr int getMaxMw() const {
                 return max_mw;
             }
 
+            /// Maximum number of supported raw IPv6 datagram QPs
             [[nodiscard]]
             constexpr int getMaxRawIpv6Qp() const {
                 return max_raw_ipv6_qp;
             }
 
+            /// Maximum number of supported Ethertype datagram QPs
             [[nodiscard]]
             constexpr int getMaxRawEthyQp() const {
                 return max_raw_ethy_qp;
             }
 
+            /// Maximum number of supported multicast groups
             [[nodiscard]]
             constexpr int getMaxMcastGrp() const {
                 return max_mcast_grp;
             }
 
+            /// Maximum number of QPs per multicast group which can be attached
             [[nodiscard]]
             constexpr int getMaxMcastQpAttach() const {
                 return max_mcast_qp_attach;
             }
 
+            /// Maximum number of QPs which can be attached to multicast groups
             [[nodiscard]]
             constexpr int getMaxTotalMcastQpAttach() const {
                 return max_total_mcast_qp_attach;
             }
 
+            /// Maximum number of supported address handles
             [[nodiscard]]
             constexpr int getMaxAh() const {
                 return max_ah;
             }
 
+            /// Maximum number of supported FMRs
             [[nodiscard]]
             constexpr int getMaxFmr() const {
                 return max_fmr;
             }
 
+            /// Maximum number of (re)maps per FMR before an unmap operation in required
             [[nodiscard]]
             constexpr int getMaxMapPerFmr() const {
                 return max_map_per_fmr;
             }
 
+            /// Maximum number of supported SRQs
             [[nodiscard]]
             constexpr int getMaxSrq() const {
                 return max_srq;
             }
 
+            /// Maximum number of WRs per SRQ
             [[nodiscard]]
             constexpr int getMaxSrqWr() const {
                 return max_srq_wr;
             }
 
+            /// Maximum number of s/g per SRQ
             [[nodiscard]]
             constexpr int getMaxSrqSge() const {
                 return max_srq_sge;
             }
 
+            /// Maximum number of partitions
             [[nodiscard]]
             constexpr uint16_t getMaxPkeys() const {
                 return max_pkeys;
             }
 
+            /// Local CA ack delay
             [[nodiscard]]
             constexpr uint8_t getLocalCaAckDelay() const {
                 return local_ca_ack_delay;
             }
 
+            /// Number of physical ports
             [[nodiscard]]
             constexpr uint8_t getPhysPortCnt() const {
                 return phys_port_cnt;
@@ -1204,11 +1218,11 @@ namespace ibv {
         };
 
         enum class Flags : std::underlying_type_t<ibv_send_flags> {
-            FENCE = IBV_SEND_FENCE,
-            SIGNALED = IBV_SEND_SIGNALED,
-            SOLICITED = IBV_SEND_SOLICITED,
-            INLINE = IBV_SEND_INLINE,
-            IP_CSUM = IBV_SEND_IP_CSUM
+            FENCE = IBV_SEND_FENCE, /// The fence Indicator (valid for RC)
+            SIGNALED = IBV_SEND_SIGNALED, /// The completion notification indicator. Relevant only if QP was created with setSignalAll(true)
+            SOLICITED = IBV_SEND_SOLICITED, /// The solocited event indicator. Valid for Send / Write with immediate
+            INLINE = IBV_SEND_INLINE, /// Send data as inline data. Valid for Send / Write
+            IP_CSUM = IBV_SEND_IP_CSUM /// Offload the IBv4 and TCP/UDP checksum calculation. Valid when the device supports checksum offload (see Context.queryAttributes())
         };
 
         struct SendWr : private ibv_send_wr {
@@ -1383,25 +1397,31 @@ namespace ibv {
         };
 
         struct Recv : private ibv_recv_wr {
+            /// User defined WR ID
             constexpr void setId(uint64_t id) {
                 wr_id = id;
             }
 
+            /// User defined WR ID
             [[nodiscard]]
             constexpr uint64_t getId() const {
                 return wr_id;
             }
 
+            /// Pointer to next WR in list, NULL if last WR
             constexpr void setNext(Recv *next) {
                 this->next = next;
             }
 
+            /// The Scatter/Gather array with size
             constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size) {
                 sg_list = scatterGatherArray;
                 num_sge = size;
             }
         };
 
+        /// Helper class for simple workrequests, that only use a single Scatter/Gather entry, aka only write to
+        /// continuous memory
         template<class SendWorkRequest>
         class Simple : public SendWorkRequest {
             static_assert(std::is_base_of<SendWr, SendWorkRequest>::value or
@@ -1419,6 +1439,93 @@ namespace ibv {
             }
         };
     } // namespace workrequest
+
+    namespace memorywindow {
+        enum class Type : std::underlying_type_t<ibv_mw_type> {
+            TYPE_1 = IBV_MW_TYPE_1,
+            TYPE_2 = IBV_MW_TYPE_2
+        };
+
+        struct BindInfo : private ibv_mw_bind_info {
+            /// The MR to bind the MW to
+            void setMr(memoryregion::MemoryRegion &memoryregion) {
+                mr = reinterpret_cast<ibv_mr *>(&memoryregion);
+            }
+
+            /// The address the MW should start at
+            constexpr void setAddr(uint64_t addr) {
+                this->addr = addr;
+            }
+
+            /// The length (in bytes) the MW should span
+            constexpr void setLength(uint64_t length) {
+                this->length = length;
+            }
+
+            /// Access flags to the MW
+            constexpr void setMwAccessFlags(std::initializer_list<AccessFlag> accessFlags) {
+                mw_access_flags = 0;
+                for (auto accessFlag : accessFlags) {
+                    mw_access_flags |= static_cast<ibv_access_flags>(accessFlag);
+                }
+            }
+        };
+
+        struct Bind : private ibv_mw_bind {
+            /// User defined WR ID
+            constexpr void setWrId(uint64_t id) {
+                wr_id = id;
+            }
+
+            // The send flags for the bind request
+            constexpr void setSendFlags(std::initializer_list<workrequest::Flags> flags) {
+                send_flags = 0;
+                for (auto flag : flags) {
+                    send_flags |= static_cast<ibv_send_flags>(flag);
+                }
+            }
+
+            /// MW bind information
+            [[nodiscard]]
+            BindInfo &getBindInfo() {
+                return reinterpret_cast<BindInfo &>(bind_info);
+            }
+        };
+
+        struct MemoryWindow : private ibv_mw {
+            MemoryWindow(const MemoryWindow &) = delete; // Can't be constructed
+
+            static void operator delete(void *ptr) noexcept {
+                const auto status = ibv_dealloc_mw(reinterpret_cast<ibv_mw *>(ptr));
+                checkStatusNoThrow("ibv_dealloc_mw", status);
+            }
+
+            [[nodiscard]]
+            context::Context *getContext() const {
+                return reinterpret_cast<context::Context *>(context);
+            }
+
+            [[nodiscard]]
+            protectiondomain::ProtectionDomain *getPd() const {
+                return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
+            }
+
+            [[nodiscard]]
+            constexpr uint32_t getRkey() const {
+                return rkey;
+            }
+
+            [[nodiscard]]
+            constexpr uint32_t getHandle() const {
+                return handle;
+            }
+
+            [[nodiscard]]
+            constexpr Type getType() {
+                return static_cast<Type>(type);
+            }
+        };
+    } // namespace memorywindow
 
     namespace srq {
         enum class AttributeMask : std::underlying_type_t<ibv_srq_attr_mask> {
@@ -1715,7 +1822,7 @@ namespace ibv {
             }
         };
 
-        struct Attributes : private ibv_qp_attr {
+        struct qAttributes : private ibv_qp_attr {
             friend struct QueuePair;
 
             /// The current QueuePair state
@@ -1740,62 +1847,74 @@ namespace ibv {
                 return static_cast<Mtu>(path_mtu);
             }
 
+            /// The (RC/UC) path MTU
             constexpr void setPathMtu(Mtu path_mtu) {
                 this->path_mtu = static_cast<ibv_mtu>(path_mtu);
             }
 
-            /// The path migration state
+            /// Path migration state (valid if HCA supports APM)
             [[nodiscard]]
             constexpr MigrationState getPathMigState() const {
                 return static_cast<MigrationState>(path_mig_state);
             }
 
+            /// Path migration state (valid if HCA supports APM)
             constexpr void setPathMigState(MigrationState path_mig_state) {
                 this->path_mig_state = static_cast<ibv_mig_state>(path_mig_state);
             }
 
+            /// Q_Key for the QP (valid only for UD QPs)
             [[nodiscard]]
             constexpr uint32_t getQkey() const {
                 return qkey;
             }
 
+            /// Q_Key for the QP (valid only for UD QPs)
             constexpr void setQkey(uint32_t qkey) {
                 this->qkey = qkey;
             }
 
+            /// PSN for receive queue (valid only for RC/UC QPs)
             [[nodiscard]]
             constexpr uint32_t getRqPsn() const {
                 return rq_psn;
             }
 
+            /// PSN for receive queue (valid only for RC/UC QPs)
             constexpr void setRqPsn(uint32_t rq_psn) {
                 this->rq_psn = rq_psn;
             }
 
+            /// PSN for send queue (valid only for RC/UC QPs)
             [[nodiscard]]
             constexpr uint32_t getSqPsn() const {
                 return sq_psn;
             }
 
+            /// PSN for send queue (valid only for RC/UC QPs)
             constexpr void setSqPsn(uint32_t sq_psn) {
                 this->sq_psn = sq_psn;
             }
 
+            /// Destination QP number (valid only for RC/UC QPs)
             [[nodiscard]]
             constexpr uint32_t getDestQpNum() const {
                 return dest_qp_num;
             }
 
+            /// Destination QP number (valid only for RC/UC QPs)
             constexpr void setDestQpNum(uint32_t dest_qp_num) {
                 this->dest_qp_num = dest_qp_num;
             }
 
+            /// Test enabled remote access operations (valid only for RC/UC QPs)
             [[nodiscard]]
             constexpr bool hasQpAccessFlags(AccessFlag flag) const {
                 const auto rawFlag = static_cast<ibv_access_flags>(flag);
                 return (qp_access_flags & rawFlag) == rawFlag;
             }
 
+            /// Set enabled remote access operations (valid only for RC/UC QPs)
             constexpr void setQpAccessFlags(std::initializer_list<AccessFlag> qp_access_flags) {
                 int raw = 0;
                 for (auto flag : qp_access_flags) {
@@ -1804,148 +1923,185 @@ namespace ibv {
                 this->qp_access_flags = raw;
             }
 
+            /// QP capabilities (valid if HCA supports QP resizing)
             [[nodiscard]]
             const Capabilities &getCap() const {
                 return *reinterpret_cast<const Capabilities *>(&cap);
             }
 
+            /// QP capabilities (valid if HCA supports QP resizing)
             constexpr void setCap(const Capabilities &cap) {
                 this->cap = cap;
             }
 
+            /// Primary path address vector (valid only for RC/UC QPs)
             [[nodiscard]]
             constexpr const ah::Attributes &getAhAttr() const {
                 return *static_cast<const ah::Attributes *>(&ah_attr);
             }
 
+            /// Primary path address vector (valid only for RC/UC QPs)
             constexpr void setAhAttr(const ah::Attributes &ah_attr) {
                 this->ah_attr = ah_attr;
             }
 
+            /// Alternate path address vector (valid only for RC/UC QPs)
             [[nodiscard]]
             constexpr const ah::Attributes &getAltAhAttr() const {
                 return *static_cast<const ah::Attributes *>(&alt_ah_attr);
             }
 
+            /// Alternate path address vector (valid only for RC/UC QPs)
             constexpr void setAltAhAttr(const ah::Attributes &alt_ah_attr) {
                 this->alt_ah_attr = alt_ah_attr;
             }
 
+            /// Primary P_Key index
             [[nodiscard]]
             constexpr uint16_t getPkeyIndex() const {
                 return pkey_index;
             }
 
+            /// Primary P_Key index
             constexpr void setPkeyIndex(uint16_t pkey_index) {
                 this->pkey_index = pkey_index;
             }
 
+            /// Alternate P_Key index
             [[nodiscard]]
             constexpr uint16_t getAltPkeyIndex() const {
                 return alt_pkey_index;
             }
 
+            /// Alternate P_Key index
             constexpr void setAltPkeyIndex(uint16_t alt_pkey_index) {
                 this->alt_pkey_index = alt_pkey_index;
             }
 
+            /// Enable SQD.drained async notification (Valid only if qp_state is SQD)
             [[nodiscard]]
             constexpr uint8_t getEnSqdAsyncNotify() const {
                 return en_sqd_async_notify;
             }
 
+            /// Enable SQD.drained async notification (Valid only if qp_state is SQD)
             constexpr void setEnSqdAsyncNotify(uint8_t en_sqd_async_notify) {
                 this->en_sqd_async_notify = en_sqd_async_notify;
             }
 
+            /// Is the QP draining? Irrelevant for ibv_modify_qp()
             [[nodiscard]]
             constexpr uint8_t getSqDraining() const {
                 return sq_draining;
             }
 
-            constexpr void setSqDraining(uint8_t sq_draining) {
-                this->sq_draining = sq_draining;
-            }
-
+            /// Number of outstanding RDMA reads & atomic operations on the destination QP (valid only for RC QPs)
             [[nodiscard]]
             constexpr uint8_t getMaxRdAtomic() const {
                 return max_rd_atomic;
             }
 
+            /// Number of outstanding RDMA reads & atomic operations on the destination QP (valid only for RC QPs)
             constexpr void setMaxRdAtomic(uint8_t max_rd_atomic) {
                 this->max_rd_atomic = max_rd_atomic;
             }
 
+            /// Number of responder resources for handling incoming RDMA reads & atomic operations (valid only for RC QPs)
             [[nodiscard]]
             constexpr uint8_t getMaxDestRdAtomic() const {
                 return max_dest_rd_atomic;
             }
 
+            /// Number of responder resources for handling incoming RDMA reads & atomic operations (valid only for RC QPs)
             constexpr void setMaxDestRdAtomic(uint8_t max_dest_rd_atomic) {
                 this->max_dest_rd_atomic = max_dest_rd_atomic;
             }
 
+            /// Minimum RNR NAK timer (valid only for RC QPs)
             [[nodiscard]]
             constexpr uint8_t getMinRnrTimer() const {
                 return min_rnr_timer;
             }
 
+            /// Minimum RNR NAK timer (valid only for RC QPs)
             constexpr void setMinRnrTimer(uint8_t min_rnr_timer) {
                 this->min_rnr_timer = min_rnr_timer;
             }
 
+            /// Primary port number
             [[nodiscard]]
             constexpr uint8_t getPortNum() const {
                 return port_num;
             }
 
+            /// Primary port number
             constexpr void setPortNum(uint8_t port_num) {
                 this->port_num = port_num;
             }
 
+            /// Local ack timeout for primary path (valid only for RC QPs)
             [[nodiscard]]
             constexpr uint8_t getTimeout() const {
                 return timeout;
             }
 
+            /// Local ack timeout for primary path (valid only for RC QPs)
             constexpr void setTimeout(uint8_t timeout) {
                 this->timeout = timeout;
             }
 
+            /// Retry count (valid only for RC QPs)
             [[nodiscard]]
             constexpr uint8_t getRetryCnt() const {
                 return retry_cnt;
             }
 
+            /// Retry count (valid only for RC QPs)
             constexpr void setRetryCnt(uint8_t retry_cnt) {
                 this->retry_cnt = retry_cnt;
             }
 
+            /// RNR retry (valid only for RC QPs)
             [[nodiscard]]
             constexpr uint8_t getRnrRetry() const {
                 return rnr_retry;
             }
 
+            /// RNR retry (valid only for RC QPs)
             constexpr void setRnrRetry(uint8_t rnr_retry) {
                 this->rnr_retry = rnr_retry;
             }
 
+            /// Alternate port number
             [[nodiscard]]
             constexpr uint8_t getAltPortNum() const {
                 return alt_port_num;
             }
 
+            /// Alternate port number
             constexpr void setAltPortNum(uint8_t alt_port_num) {
                 this->alt_port_num = alt_port_num;
             }
 
+            /// Local ack timeout for alternate path (valid only for RC QPs)
             [[nodiscard]]
             constexpr uint8_t getAltTimeout() const {
                 return alt_timeout;
             }
 
+            /// Local ack timeout for alternate path (valid only for RC QPs)
             constexpr void setAltTimeout(uint8_t alt_timeout) {
                 this->alt_timeout = alt_timeout;
+            }
+
+            /// Rate limit in kbps for packet pacing
+            constexpr uint32_t getRateLimit() const {
+                return rate_limit;
+            }
+
+            /// Rate limit in kbps for packet pacing
+            constexpr void setRateLimit(uint32_t rateLimit) {
+                rate_limit = rateLimit;
             }
         };
 
@@ -1995,6 +2151,24 @@ namespace ibv {
             }
 
             /// Modify the attributes of the QueuePair, according to modifiedAttributes
+            /// To get the QueuePair operational, transition the state from: Reset --> Init --> RTR --> RTS.
+            /// For this transition, the following attributes must be changed:
+            /// For UD QueuePairs:
+            /// To Init: STATE, PKEY_INDEX, PORT, QKEY
+            /// To RTR: STATE
+            /// TO RTS: STATE, SQ_PSN
+            /// For UC QueuePairs:
+            /// To Init: STATE, PKEY_INDEX, PORT, ACCESS_FLAGS
+            /// To RTR: STATE, AV, PATH_MTU
+            /// To RTS: STATE, SQ_PSN
+            /// For RC QueuePairs:
+            /// To Init: STATE, PKEY_INDEX, PORT, ACCESS_FLAGS
+            /// To RTR: STATE, AV, PATH_MTU, DEST_QPN, RQ_PSN, MAX_DEST_RD_ATOMIC, MIN_RNR_TIMER
+            /// To RTS: STATE, SQ_PSN, MAX_QP_RD_ATOMIC, RETRY_CNT, RNR_RETRY, TIMEOUT
+            /// For RAW_PACKET:
+            /// To Init: STATE, PORT
+            /// To RTR: STATE
+            /// To RTS: STATE
             void modify(Attributes &attr, std::initializer_list<AttrMask> modifiedAttributes) {
                 int mask = 0;
                 for (auto mod : modifiedAttributes) {
@@ -2004,7 +2178,7 @@ namespace ibv {
                 checkStatus("ibv_modify_qp", status);
             }
 
-            ///
+            /// Get the Attributes of a QueuePair
             void query(Attributes &attr, std::initializer_list<AttrMask> queriedAttributes,
                        InitAttributes &init_attr, std::initializer_list<InitAttrMask> queriedInitAttributes) {
                 int mask = 0;
@@ -2018,6 +2192,7 @@ namespace ibv {
                 checkStatus("ibv_query_qp", status);
             }
 
+            /// Get the Attributes of a QueuePair
             [[nodiscard]]
             std::tuple<Attributes, InitAttributes> query(std::initializer_list<AttrMask> queriedAttributes,
                                                          std::initializer_list<InitAttrMask> queriedInitAttributes) {
@@ -2027,6 +2202,7 @@ namespace ibv {
                 return {attributes, initAttributes};
             }
 
+            /// Get only the Attributes of a QueuePair
             [[nodiscard]]
             Attributes query(std::initializer_list<AttrMask> queriedAttributes) {
                 auto[attributes, initAttributes] = query(queriedAttributes, {});
@@ -2034,6 +2210,7 @@ namespace ibv {
                 return attributes;
             }
 
+            /// Get only the InitAttributes of a QueuePair
             [[nodiscard]]
             InitAttributes query(std::initializer_list<InitAttrMask> queriedInitAttributes) {
                 auto[attributes, initAttributes] = query({}, queriedInitAttributes);
@@ -2041,12 +2218,14 @@ namespace ibv {
                 return initAttributes;
             }
 
+            /// Post a (possibly chained) workrequest to the send queue
             void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr) {
                 const auto status = ibv_post_send(this, reinterpret_cast<ibv_send_wr *>(&wr),
                                                   reinterpret_cast<ibv_send_wr **>(&bad_wr));
                 checkStatus("ibv_post_send", status);
             }
 
+            /// Post a (possibly chained) workrequest to the receive queue
             void postRecv(workrequest::Recv &wr, workrequest::Recv *&bad_wr) {
                 const auto status = ibv_post_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
                                                   reinterpret_cast<ibv_recv_wr **>(&bad_wr));
@@ -2060,6 +2239,8 @@ namespace ibv {
                 return std::unique_ptr<flow::Flow>(reinterpret_cast<flow::Flow *>(res));
             }
 
+            /// Post a request to bind a type 1 memory window to a memory region
+            /// The QP Transport Service Type must be either UC, RC or XRC_SEND for bind operations
             /// @return the new rkey
             [[nodiscard]]
             uint32_t bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info) {
@@ -2243,6 +2424,7 @@ namespace ibv {
                 return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
             }
 
+            /// Create an AddressHandle associated with the ProtectionDomain
             [[nodiscard]]
             std::unique_ptr<ah::AddressHandle> createAddressHandle(ah::Attributes attributes) {
                 using AH = ah::AddressHandle;
@@ -2281,7 +2463,7 @@ namespace ibv {
                 return reinterpret_cast<device::Device *>(device);
             }
 
-
+            /// Query a device for its attributes
             [[nodiscard]]
             device::Attributes queryAttributes() {
                 device::Attributes res;
