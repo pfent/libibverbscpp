@@ -2,20 +2,16 @@
 #define LIBIBVERBSCPP_LIBRARY_H
 
 #include <fcntl.h>
-#include <functional>
 #include <infiniband/verbs.h>
-#include <initializer_list>
 #include <iostream>
 #include <memory>
 #include <sstream>
-#include <type_traits>
-#include <algorithm>
 
 namespace ibv {
     // TODO: maybe replace the badWr arguments with optional return types?
-    namespace {
+    namespace internal {
         [[nodiscard]]
-        std::runtime_error exception(const char *function, int errnum) {
+        inline std::runtime_error exception(const char *function, int errnum) {
             return std::runtime_error(
                     std::string(function) + " failed with error " + std::to_string(errnum) + ": " + strerror(errnum));
         }
@@ -43,7 +39,21 @@ namespace ibv {
                 std::clog << function << " failed with error " << std::to_string(status) << ": " << strerror(status);
             }
         }
-    } // namespace
+
+        struct PointerOnly {
+            PointerOnly() = delete;
+
+            PointerOnly(const PointerOnly &) = delete;
+
+            PointerOnly &operator=(const PointerOnly &) = delete;
+
+            PointerOnly(PointerOnly &&) = delete;
+
+            PointerOnly &operator=(PointerOnly &&) = delete;
+
+            ~PointerOnly() = default;
+        };
+    } // namespace internal
 
     enum class NodeType : std::underlying_type_t<ibv_node_type> {
         UNKNOWN = IBV_NODE_UNKNOWN,
@@ -193,12 +203,12 @@ namespace ibv {
             // TODO: setters for this
         };
 
-        struct Flow : private ibv_flow {
-            Flow(const Flow &) = delete; // Can't be constructed
+        struct Flow : private ibv_flow, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_destroy_flow(reinterpret_cast<ibv_flow *>(ptr));
-                checkStatusNoThrow("ibv_destroy_flow", status);
+                internal::checkStatusNoThrow("ibv_destroy_flow", status);
             }
         };
     } // namespace flow
@@ -469,31 +479,31 @@ namespace ibv {
             }
         };
 
-        struct AddressHandle : private ibv_ah {
-            AddressHandle(const AddressHandle &) = delete;
+        struct AddressHandle : private ibv_ah, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_destroy_ah(reinterpret_cast<ibv_ah *>(ptr));
-                checkStatusNoThrow("ibv_destroy_ah", status);
+                internal::checkStatusNoThrow("ibv_destroy_ah", status);
             }
         };
     } // namespace ah
 
     namespace completions {
-        struct CompletionQueue : private ibv_cq {
+        struct CompletionQueue : private ibv_cq, private internal::PointerOnly {
             friend struct CompletionEventChannel;
 
-            CompletionQueue(const CompletionQueue &) = delete;
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_destroy_cq(reinterpret_cast<ibv_cq *>(ptr));
-                checkStatusNoThrow("ibv_destroy_cq", status);
+                internal::checkStatusNoThrow("ibv_destroy_cq", status);
             }
 
             /// Resize the CompletionQueue to have at last newCqe entries
             void resize(int newCqe) {
                 const auto status = ibv_resize_cq(this, newCqe);
-                checkStatus("ibv_resize_cq", status);
+                internal::checkStatus("ibv_resize_cq", status);
             }
 
             /// Acknowledge nEvents events on the CompletionQueue
@@ -506,7 +516,7 @@ namespace ibv {
             [[nodiscard]]
             int poll(int numEntries, workcompletion::WorkCompletion *resultArray) {
                 const auto res = ibv_poll_cq(this, numEntries, reinterpret_cast<ibv_wc *>(resultArray));
-                check("ibv_poll_cq", res >= 0);
+                internal::check("ibv_poll_cq", res >= 0);
                 return res;
             }
 
@@ -514,16 +524,16 @@ namespace ibv {
             /// @param solicitedOnly if the events should only be produced for workrequests with Flags::SOLICITED
             void requestNotify(bool solicitedOnly) {
                 const auto status = ibv_req_notify_cq(this, static_cast<int>(solicitedOnly));
-                checkStatus("ibv_req_notify_cq", status);
+                internal::checkStatus("ibv_req_notify_cq", status);
             }
         };
 
-        struct CompletionEventChannel : private ibv_comp_channel {
-            CompletionEventChannel(const CompletionEventChannel &) = delete;
+        struct CompletionEventChannel : private ibv_comp_channel, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_destroy_comp_channel(reinterpret_cast<ibv_comp_channel *>(ptr));
-                checkStatusNoThrow("ibv_destroy_comp_channel", status);
+                internal::checkStatusNoThrow("ibv_destroy_comp_channel", status);
             }
 
             /// Wait for the next completion event in this CompletionEventChannel
@@ -533,7 +543,7 @@ namespace ibv {
                 CompletionQueue *cqRet;
                 void *contextRet;
                 const auto status = ibv_get_cq_event(this, reinterpret_cast<ibv_cq **>(&cqRet), &contextRet);
-                checkStatus("ibv_get_cq_event", status);
+                internal::checkStatus("ibv_get_cq_event", status);
                 return {cqRet, contextRet};
             }
         };
@@ -762,7 +772,7 @@ namespace ibv {
             /// The Firmware verssion
             [[nodiscard]]
             constexpr const char *getFwVer() const {
-                return fw_ver;
+                return static_cast<const char *>(fw_ver);
             }
 
             /// Node GUID (in network byte order)
@@ -1001,9 +1011,7 @@ namespace ibv {
             }
         };
 
-        struct Device : private ibv_device {
-            Device(const Device &) = delete;
-
+        struct Device : private ibv_device, private internal::PointerOnly {
             [[nodiscard]]
             const char *getName() {
                 return ibv_get_device_name(this);
@@ -1019,7 +1027,7 @@ namespace ibv {
             std::unique_ptr<context::Context> open() {
                 using Ctx = context::Context;
                 const auto context = ibv_open_device(this);
-                checkPtr("ibv_open_device", context);
+                internal::checkPtr("ibv_open_device", context);
                 return std::unique_ptr<Ctx>(reinterpret_cast<Ctx *>(context));
             }
         };
@@ -1030,9 +1038,8 @@ namespace ibv {
 
         public:
             /// Get a list of available RDMA devices
-            DeviceList() {
-                devices = reinterpret_cast<Device **>(ibv_get_device_list(&num_devices));
-                checkPtr("ibv_get_device_list", devices);
+            DeviceList() : devices(reinterpret_cast<Device **>(ibv_get_device_list(&num_devices))) {
+                internal::checkPtr("ibv_get_device_list", devices);
             }
 
             ~DeviceList() {
@@ -1046,8 +1053,21 @@ namespace ibv {
             DeviceList &operator=(const DeviceList &) = delete;
 
             DeviceList(DeviceList &&other) noexcept {
-                std::swap(devices, other.devices);
-                std::swap(num_devices, other.num_devices);
+                devices = other.devices;
+                other.devices = nullptr;
+                num_devices = other.num_devices;
+                other.num_devices = 0;
+            }
+
+            DeviceList &operator=(DeviceList &&other) noexcept {
+                if (devices != nullptr) {
+                    ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
+                }
+                devices = other.devices;
+                other.devices = nullptr;
+                num_devices = other.num_devices;
+                other.num_devices = 0;
+                return *this;
             }
 
             [[nodiscard]]
@@ -1113,12 +1133,12 @@ namespace ibv {
             uint32_t rkey;
         };
 
-        struct MemoryRegion : private ibv_mr {
-            MemoryRegion(const MemoryRegion &) = delete;
+        struct MemoryRegion : private ibv_mr, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_dereg_mr(reinterpret_cast<ibv_mr *>(ptr));
-                checkStatusNoThrow("ibv_dereg_mr", status);
+                internal::checkStatusNoThrow("ibv_dereg_mr", status);
             }
 
             [[nodiscard]]
@@ -1196,8 +1216,8 @@ namespace ibv {
 
         [[nodiscard]]
         inline std::string to_string(const MemoryRegion &mr) {
-            std::stringstream addr;
-            addr << std::hex << mr.getAddr();
+            std::ostringstream addr;
+            addr << mr.getAddr();
             return std::string("ptr=") + addr.str() + " size=" + std::to_string(mr.getLength()) + " key={..}";
         }
     } // namespace memoryregion
@@ -1492,12 +1512,12 @@ namespace ibv {
             }
         };
 
-        struct MemoryWindow : private ibv_mw {
-            MemoryWindow(const MemoryWindow &) = delete; // Can't be constructed
+        struct MemoryWindow : private ibv_mw, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_dealloc_mw(reinterpret_cast<ibv_mw *>(ptr));
-                checkStatusNoThrow("ibv_dealloc_mw", status);
+                internal::checkStatusNoThrow("ibv_dealloc_mw", status);
             }
 
             [[nodiscard]]
@@ -1560,12 +1580,12 @@ namespace ibv {
                     ibv_srq_init_attr{context, attrs} {}
         };
 
-        struct SharedReceiveQueue : private ibv_srq {
-            SharedReceiveQueue(const SharedReceiveQueue &) = delete;
+        struct SharedReceiveQueue : private ibv_srq, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_destroy_srq(reinterpret_cast<ibv_srq *>(ptr));
-                checkStatusNoThrow("ibv_destroy_srq", status);
+                internal::checkStatusNoThrow("ibv_destroy_srq", status);
             }
 
             /// Modify the attributes of the SharedReceiveQueue. Which attributes are specified in modifiedAttrs
@@ -1576,13 +1596,13 @@ namespace ibv {
                 }
 
                 const auto status = ibv_modify_srq(this, &attr, modifiedMask);
-                checkStatus("ibv_modify_srq", status);
+                internal::checkStatus("ibv_modify_srq", status);
             }
 
             /// Query the current attributes of the SharedReceiveQueue and return them in res
             void query(Attributes &res) {
                 const auto status = ibv_query_srq(this, &res);
-                checkStatus("ibv_query_srq", status);
+                internal::checkStatus("ibv_query_srq", status);
             }
 
             /// Query the current attributes of the SharedReceiveQueue
@@ -1598,7 +1618,7 @@ namespace ibv {
             uint32_t getNumber() {
                 uint32_t num = 0;
                 const auto status = ibv_get_srq_num(this, &num);
-                checkStatus("ibv_get_srq_num", status);
+                internal::checkStatus("ibv_get_srq_num", status);
                 return num;
             }
 
@@ -1607,7 +1627,7 @@ namespace ibv {
             void postRecv(workrequest::Recv &wr, workrequest::Recv *&badWr) {
                 const auto status = ibv_post_srq_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
                                                       reinterpret_cast<ibv_recv_wr **>(&badWr));
-                checkStatus("ibv_post_srq_recv", status);
+                internal::checkStatus("ibv_post_srq_recv", status);
             }
         };
     } // namespace srq
@@ -1647,12 +1667,12 @@ namespace ibv {
             }
         };
 
-        struct ExtendedConnectionDomain : private ibv_xrcd {
-            ExtendedConnectionDomain(const ExtendedConnectionDomain &) = delete;
+        struct ExtendedConnectionDomain : private ibv_xrcd, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_close_xrcd(reinterpret_cast<ibv_xrcd *>(ptr));
-                checkStatusNoThrow("ibv_close_xrcd", status);
+                internal::checkStatusNoThrow("ibv_close_xrcd", status);
             }
         };
     } // namespace xrcd
@@ -1822,7 +1842,7 @@ namespace ibv {
             }
         };
 
-        struct qAttributes : private ibv_qp_attr {
+        struct Attributes : private ibv_qp_attr {
             friend struct QueuePair;
 
             /// The current QueuePair state
@@ -2137,12 +2157,12 @@ namespace ibv {
             }
         };
 
-        struct QueuePair : private ibv_qp {
-            QueuePair(const QueuePair &) = delete;
+        struct QueuePair : private ibv_qp, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_destroy_qp(reinterpret_cast<ibv_qp *>(ptr));
-                checkStatusNoThrow("ibv_destroy_qp", status);
+                internal::checkStatusNoThrow("ibv_destroy_qp", status);
             }
 
             [[nodiscard]]
@@ -2175,7 +2195,7 @@ namespace ibv {
                     mask |= static_cast<ibv_qp_attr_mask>(mod);
                 }
                 const auto status = ibv_modify_qp(this, &attr, mask);
-                checkStatus("ibv_modify_qp", status);
+                internal::checkStatus("ibv_modify_qp", status);
             }
 
             /// Get the Attributes of a QueuePair
@@ -2189,7 +2209,7 @@ namespace ibv {
                     mask |= static_cast<ibv_qp_init_attr_mask>(query);
                 }
                 const auto status = ibv_query_qp(this, &attr, mask, &init_attr);
-                checkStatus("ibv_query_qp", status);
+                internal::checkStatus("ibv_query_qp", status);
             }
 
             /// Get the Attributes of a QueuePair
@@ -2222,20 +2242,20 @@ namespace ibv {
             void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr) {
                 const auto status = ibv_post_send(this, reinterpret_cast<ibv_send_wr *>(&wr),
                                                   reinterpret_cast<ibv_send_wr **>(&bad_wr));
-                checkStatus("ibv_post_send", status);
+                internal::checkStatus("ibv_post_send", status);
             }
 
             /// Post a (possibly chained) workrequest to the receive queue
             void postRecv(workrequest::Recv &wr, workrequest::Recv *&bad_wr) {
                 const auto status = ibv_post_recv(this, reinterpret_cast<ibv_recv_wr *>(&wr),
                                                   reinterpret_cast<ibv_recv_wr **>(&bad_wr));
-                checkStatus("ibv_post_recv", status);
+                internal::checkStatus("ibv_post_recv", status);
             }
 
             [[nodiscard]]
             std::unique_ptr<flow::Flow> createFlow(flow::Attributes &attr) {
                 auto res = ibv_create_flow(this, reinterpret_cast<ibv_flow_attr *>(&attr));
-                checkPtr("ibv_create_flow", res);
+                internal::checkPtr("ibv_create_flow", res);
                 return std::unique_ptr<flow::Flow>(reinterpret_cast<flow::Flow *>(res));
             }
 
@@ -2246,18 +2266,18 @@ namespace ibv {
             uint32_t bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info) {
                 const auto status = ibv_bind_mw(this, reinterpret_cast<ibv_mw *>(&mw),
                                                 reinterpret_cast<ibv_mw_bind *>(&info));
-                checkStatus("ibv_bind_mw", status);
+                internal::checkStatus("ibv_bind_mw", status);
                 return mw.getRkey();
             }
 
             void attachToMcastGroup(const Gid &gid, uint16_t lid) {
                 const auto status = ibv_attach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
-                checkStatus("ibv_attach_mcast", status);
+                internal::checkStatus("ibv_attach_mcast", status);
             }
 
             void detachFromMcastGroup(const Gid &gid, uint16_t lid) {
                 const auto status = ibv_detach_mcast(this, reinterpret_cast<const ibv_gid *>(&gid), lid);
-                checkStatus("ibv_detach_mcast", status);
+                internal::checkStatus("ibv_detach_mcast", status);
             }
         };
     } // namespace queuepair
@@ -2368,12 +2388,12 @@ namespace ibv {
     } // namespace event
 
     namespace protectiondomain {
-        struct ProtectionDomain : private ibv_pd {
-            ProtectionDomain(const ProtectionDomain &) = delete;
+        struct ProtectionDomain : private ibv_pd, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_dealloc_pd(reinterpret_cast<ibv_pd *>(ptr));
-                checkStatusNoThrow("ibv_dealloc_pd", status);
+                internal::checkStatusNoThrow("ibv_dealloc_pd", status);
             }
 
             [[nodiscard]]
@@ -2395,7 +2415,7 @@ namespace ibv {
                     access |= static_cast<ibv_access_flags>(flag);
                 }
                 const auto mr = ibv_reg_mr(this, addr, length, access);
-                checkPtr("ibv_reg_mr", mr);
+                internal::checkPtr("ibv_reg_mr", mr);
                 return std::unique_ptr<MR>(reinterpret_cast<MR *>(mr));
             }
 
@@ -2404,7 +2424,7 @@ namespace ibv {
             allocMemoryWindow(memorywindow::Type type) {
                 using MW = memorywindow::MemoryWindow;
                 const auto mw = ibv_alloc_mw(this, static_cast<ibv_mw_type>(type));
-                checkPtr("ibv_alloc_mw", mw);
+                internal::checkPtr("ibv_alloc_mw", mw);
                 return std::unique_ptr<MW>(reinterpret_cast<MW *>(mw));
             }
 
@@ -2412,7 +2432,7 @@ namespace ibv {
             std::unique_ptr<srq::SharedReceiveQueue> createSrq(srq::InitAttributes &initAttributes) {
                 using SRQ = srq::SharedReceiveQueue;
                 const auto srq = ibv_create_srq(this, reinterpret_cast<ibv_srq_init_attr *>(&initAttributes));
-                checkPtr("ibv_create_srq", srq);
+                internal::checkPtr("ibv_create_srq", srq);
                 return std::unique_ptr<SRQ>(reinterpret_cast<SRQ *>(srq));
             }
 
@@ -2420,7 +2440,7 @@ namespace ibv {
             std::unique_ptr<queuepair::QueuePair> createQueuePair(queuepair::InitAttributes &initAttributes) {
                 using QP = queuepair::QueuePair;
                 const auto qp = ibv_create_qp(this, reinterpret_cast<ibv_qp_init_attr *>(&initAttributes));
-                checkPtr("ibv_create_qp", qp);
+                internal::checkPtr("ibv_create_qp", qp);
                 return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
             }
 
@@ -2429,7 +2449,7 @@ namespace ibv {
             std::unique_ptr<ah::AddressHandle> createAddressHandle(ah::Attributes attributes) {
                 using AH = ah::AddressHandle;
                 const auto ah = ibv_create_ah(this, reinterpret_cast<ibv_ah_attr *>(&attributes));
-                checkPtr("ibv_create_ah", ah);
+                internal::checkPtr("ibv_create_ah", ah);
                 return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
             }
 
@@ -2443,19 +2463,19 @@ namespace ibv {
                                                       reinterpret_cast<ibv_wc *>(&wc),
                                                       reinterpret_cast<ibv_grh *>(grh),
                                                       port_num);
-                checkPtr("ibv_create_ah_from_wc", ah);
+                internal::checkPtr("ibv_create_ah_from_wc", ah);
                 return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
             }
         };
     } // namespace protectiondomain
 
     namespace context {
-        struct Context : private ibv_context {
-            Context(const Context &) = delete;
+        struct Context : private ibv_context, private internal::PointerOnly {
+            static void *operator new(std::size_t) noexcept = delete;
 
             static void operator delete(void *ptr) noexcept {
                 const auto status = ibv_close_device(reinterpret_cast<ibv_context *>(ptr));
-                checkStatusNoThrow("ibv_close_device", status);
+                internal::checkStatusNoThrow("ibv_close_device", status);
             }
 
             [[nodiscard]]
@@ -2468,7 +2488,7 @@ namespace ibv {
             device::Attributes queryAttributes() {
                 device::Attributes res;
                 const auto status = ibv_query_device(this, reinterpret_cast<ibv_device_attr *>(&res));
-                checkStatus("ibv_query_device", status);
+                internal::checkStatus("ibv_query_device", status);
                 return res;
             }
 
@@ -2477,7 +2497,7 @@ namespace ibv {
             port::Attributes queryPort(uint8_t port) {
                 port::Attributes res;
                 const auto status = ibv_query_port(this, port, reinterpret_cast<ibv_port_attr *>(&res));
-                checkStatus("ibv_query_port", status);
+                internal::checkStatus("ibv_query_port", status);
                 return res;
             }
 
@@ -2487,7 +2507,7 @@ namespace ibv {
             event::AsyncEvent getAsyncEvent() {
                 event::AsyncEvent res{};
                 const auto status = ibv_get_async_event(this, reinterpret_cast<ibv_async_event *>(&res));
-                checkStatus("ibv_get_async_event", status);
+                internal::checkStatus("ibv_get_async_event", status);
                 return res;
             }
 
@@ -2496,7 +2516,7 @@ namespace ibv {
             Gid queryGid(uint8_t port_num, int index) {
                 Gid res{};
                 const auto status = ibv_query_gid(this, port_num, index, reinterpret_cast<ibv_gid *>(&res));
-                checkStatus("ibv_query_gid", status);
+                internal::checkStatus("ibv_query_gid", status);
                 return res;
             }
 
@@ -2505,7 +2525,7 @@ namespace ibv {
             uint16_t queryPkey(uint8_t port_num, int index) {
                 uint16_t res{};
                 const auto status = ibv_query_pkey(this, port_num, index, &res);
-                checkStatus("ibv_query_pkey", status);
+                internal::checkStatus("ibv_query_pkey", status);
                 return res;
             }
 
@@ -2514,7 +2534,7 @@ namespace ibv {
             std::unique_ptr<protectiondomain::ProtectionDomain> allocProtectionDomain() {
                 using PD = protectiondomain::ProtectionDomain;
                 const auto pd = ibv_alloc_pd(this);
-                checkPtr("ibv_alloc_pd", pd);
+                internal::checkPtr("ibv_alloc_pd", pd);
                 return std::unique_ptr<PD>(reinterpret_cast<PD *>(pd));
             }
 
@@ -2524,7 +2544,7 @@ namespace ibv {
             openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
                 using XRCD = xrcd::ExtendedConnectionDomain;
                 const auto xrcd = ibv_open_xrcd(this, reinterpret_cast<ibv_xrcd_init_attr *>(&attr));
-                checkPtr("ibv_open_xrcd", xrcd);
+                internal::checkPtr("ibv_open_xrcd", xrcd);
                 return std::unique_ptr<XRCD>(reinterpret_cast<XRCD *>(xrcd));
             }
 
@@ -2533,7 +2553,7 @@ namespace ibv {
             std::unique_ptr<completions::CompletionEventChannel> createCompletionEventChannel() {
                 using CEC = completions::CompletionEventChannel;
                 const auto compChannel = ibv_create_comp_channel(this);
-                checkPtr("ibv_create_comp_channel", compChannel);
+                internal::checkPtr("ibv_create_comp_channel", compChannel);
                 return std::unique_ptr<CEC>(reinterpret_cast<CEC *>(compChannel));
             }
 
@@ -2551,7 +2571,7 @@ namespace ibv {
                 using CQ = completions::CompletionQueue;
                 const auto cq = ibv_create_cq(this, cqe, context, reinterpret_cast<ibv_comp_channel *>(&cec),
                                               completionVector);
-                checkPtr("ibv_create_cq", cq);
+                internal::checkPtr("ibv_create_cq", cq);
                 return std::unique_ptr<CQ>(reinterpret_cast<CQ *>(cq));
             }
 
@@ -2560,7 +2580,7 @@ namespace ibv {
             std::unique_ptr<queuepair::QueuePair> openSharableQueuePair(queuepair::OpenAttributes &openAttributes) {
                 using QP = queuepair::QueuePair;
                 const auto qp = ibv_open_qp(this, reinterpret_cast<ibv_qp_open_attr *>(&openAttributes));
-                checkPtr("ibv_open_qp", qp);
+                internal::checkPtr("ibv_open_qp", qp);
                 return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
             }
 
@@ -2576,7 +2596,7 @@ namespace ibv {
                 const auto status = ibv_init_ah_from_wc(this, port_num, reinterpret_cast<ibv_wc *>(&wc),
                                                         reinterpret_cast<ibv_grh *>(grh),
                                                         reinterpret_cast<ibv_ah_attr *>(&attributes));
-                checkStatus("ibv_init_ah_from_wc", status);
+                internal::checkStatus("ibv_init_ah_from_wc", status);
             }
 
             /// Create new AddressHandle Attributes from a WorkCompletion
@@ -2601,7 +2621,7 @@ namespace ibv {
     /// is undefined.
     inline void forkInit() {
         const auto status = ibv_fork_init();
-        checkStatus("ibv_fork_init", status);
+        internal::checkStatus("ibv_fork_init", status);
     }
 } // namespace ibv
 #endif
