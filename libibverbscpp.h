@@ -1131,6 +1131,10 @@ namespace ibv {
         struct RemoteAddress {
             uint64_t address;
             uint32_t rkey;
+
+            RemoteAddress offset(uint64_t offset) {
+                return RemoteAddress{address + offset, rkey};
+            }
         };
 
         struct MemoryRegion : private ibv_mr, private internal::PointerOnly {
