@@ -2118,6 +2118,7 @@ namespace ibv {
                 this->alt_timeout = alt_timeout;
             }
 
+            /* Only available in newer versions of verbs.h
             /// Rate limit in kbps for packet pacing
             constexpr uint32_t getRateLimit() const {
                 return rate_limit;
@@ -2127,6 +2128,7 @@ namespace ibv {
             constexpr void setRateLimit(uint32_t rateLimit) {
                 rate_limit = rateLimit;
             }
+             */
         };
 
         struct InitAttributes : private ibv_qp_init_attr {
