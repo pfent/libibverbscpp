@@ -8,7 +8,6 @@
 #include <sstream>
 
 namespace ibv {
-    // TODO: maybe replace the badWr arguments with optional return types?
     namespace internal {
         [[nodiscard]]
         inline std::runtime_error exception(const char *function, int errnum) {
@@ -1033,8 +1032,8 @@ namespace ibv {
         };
 
         class DeviceList {
+            int num_devices = 0; // needs to be initialized first
             Device **devices = nullptr;
-            int num_devices = 0;
 
         public:
             /// Get a list of available RDMA devices
@@ -1059,7 +1058,7 @@ namespace ibv {
                 other.num_devices = 0;
             }
 
-            DeviceList &operator=(DeviceList &&other) noexcept {
+            constexpr DeviceList &operator=(DeviceList &&other) noexcept {
                 if (devices != nullptr) {
                     ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
                 }
@@ -1085,6 +1084,7 @@ namespace ibv {
                 return static_cast<size_t>(num_devices);
             }
 
+            [[nodiscard]]
             constexpr Device *&operator[](int idx) {
                 return devices[idx];
             }
@@ -1132,7 +1132,8 @@ namespace ibv {
             uint64_t address;
             uint32_t rkey;
 
-            RemoteAddress offset(uint64_t offset) {
+            [[nodiscard]]
+            constexpr RemoteAddress offset(uint64_t offset) const noexcept {
                 return RemoteAddress{address + offset, rkey};
             }
         };
@@ -1197,9 +1198,8 @@ namespace ibv {
 
             /// Reregister the MemoryRegion to modify the attribotes of an existing MemoryRegion,
             /// reusing resources whenever possible
-            void // TODO: convenience functions for only setting parts
-            reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain *newPd,
-                       void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
+            void reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain *newPd,
+                            void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
                 int changes = 0;
                 for (auto change : changeFlags) {
                     changes |= static_cast<ibv_rereg_mr_flags>(change);
@@ -2244,6 +2244,7 @@ namespace ibv {
                 return initAttributes;
             }
 
+            // TODO: custom exception instead of bad_wr
             /// Post a (possibly chained) workrequest to the send queue
             void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr) {
                 const auto status = ibv_post_send(this, reinterpret_cast<ibv_send_wr *>(&wr),
