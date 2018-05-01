@@ -10,34 +10,15 @@
 namespace ibv {
     namespace internal {
         [[nodiscard]]
-        inline std::runtime_error exception(const char *function, int errnum) {
-            return std::runtime_error(
-                    std::string(function) + " failed with error " + std::to_string(errnum) + ": " + strerror(errnum));
-        }
+        inline std::runtime_error exception(const char *function, int errnum);
 
-        constexpr void check(const char *function, bool ok) {
-            if (not ok) {
-                throw exception(function, errno);
-            }
-        }
+        constexpr void check(const char *function, bool ok);
 
-        constexpr void checkStatus(const char *function, int status) {
-            if (status != 0) {
-                throw exception(function, status);
-            }
-        }
+        constexpr void checkStatus(const char *function, int status);
 
-        constexpr void checkPtr(const char *function, const void *ptr) {
-            if (ptr == nullptr) {
-                throw exception(function, errno);
-            }
-        }
+        constexpr void checkPtr(const char *function, const void *ptr);
 
-        constexpr void checkStatusNoThrow(const char *function, int status) noexcept {
-            if (status != 0) {
-                std::clog << function << " failed with error " << std::to_string(status) << ": " << strerror(status);
-            }
-        }
+        constexpr void checkStatusNoThrow(const char *function, int status) noexcept;
 
         struct PointerOnly {
             PointerOnly() = delete;
@@ -86,14 +67,10 @@ namespace ibv {
         ibv_gid underlying;
 
         [[nodiscard]]
-        constexpr uint64_t getSubnetPrefix() const {
-            return underlying.global.subnet_prefix;
-        }
+        constexpr uint64_t getSubnetPrefix() const;
 
         [[nodiscard]]
-        constexpr uint64_t getInterfaceId() const {
-            return underlying.global.interface_id;
-        }
+        constexpr uint64_t getInterfaceId() const;
     };
 
     class GlobalRoutingHeader : public ibv_grh {
@@ -105,34 +82,22 @@ namespace ibv {
         using ibv_grh::dgid;
     public:
         [[nodiscard]]
-        constexpr uint32_t getVersionTclassFlow() const {
-            return version_tclass_flow;
-        }
+        constexpr uint32_t getVersionTclassFlow() const;
 
         [[nodiscard]]
-        constexpr uint16_t getPaylen() const {
-            return paylen;
-        }
+        constexpr uint16_t getPaylen() const;
 
         [[nodiscard]]
-        constexpr uint8_t getNextHdr() const {
-            return next_hdr;
-        }
+        constexpr uint8_t getNextHdr() const;
 
         [[nodiscard]]
-        constexpr uint8_t getHopLimit() const {
-            return hop_limit;
-        }
+        constexpr uint8_t getHopLimit() const;
 
         [[nodiscard]]
-        const Gid &getSgid() const {
-            return *reinterpret_cast<const Gid *>(&sgid);
-        }
+        const Gid &getSgid() const;
 
         [[nodiscard]]
-        const Gid &getDgid() const {
-            return *reinterpret_cast<const Gid *>(&dgid);
-        }
+        const Gid &getDgid() const;
     };
 
     static_assert(sizeof(GlobalRoutingHeader) == sizeof(ibv_grh));
@@ -146,33 +111,23 @@ namespace ibv {
     public:
         /// Destination GID or MGID
         [[nodiscard]]
-        const Gid &getDgid() const {
-            return *reinterpret_cast<const Gid *>(&dgid);
-        }
+        const Gid &getDgid() const;
 
         /// Flow label
         [[nodiscard]]
-        uint32_t getFlowLabel() const {
-            return flow_label;
-        }
+        uint32_t getFlowLabel() const;
 
         /// Source GID index
         [[nodiscard]]
-        uint8_t getSgidIndex() const {
-            return sgid_index;
-        }
+        uint8_t getSgidIndex() const;
 
         /// Hop limit
         [[nodiscard]]
-        uint8_t getHopLimit() const {
-            return hop_limit;
-        }
+        uint8_t getHopLimit() const;
 
         /// Traffic class
         [[nodiscard]]
-        uint8_t getTrafficClass() const {
-            return traffic_class;
-        }
+        uint8_t getTrafficClass() const;
     };
 
     static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route));
@@ -197,13 +152,9 @@ namespace ibv {
         };
 
         struct Spec : ibv_flow_spec {
-            constexpr SpecType getType() const {
-                return static_cast<SpecType>(hdr.type);
-            }
+            constexpr SpecType getType() const;
 
-            constexpr uint16_t getSize() const {
-                return hdr.size;
-            }
+            constexpr uint16_t getSize() const;
         };
 
         struct EthFilter : ibv_flow_eth_filter {
@@ -226,10 +177,7 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_destroy_flow(reinterpret_cast<ibv_flow *>(ptr));
-                internal::checkStatusNoThrow("ibv_destroy_flow", status);
-            }
+            static void operator delete(void *ptr) noexcept;
         };
     } // namespace flow
 
@@ -240,14 +188,6 @@ namespace ibv {
     namespace protectiondomain {
         struct ProtectionDomain;
     } // namespace protectiondomain
-
-    namespace queuepair {
-        struct Attributes;
-    } // namespace queuepair
-
-    namespace memoryregion {
-        struct MemoryRegion;
-    } // namespace memoryregion
 
     namespace workcompletion {
         enum class Status : std::underlying_type_t<ibv_wc_status> {
@@ -311,127 +251,64 @@ namespace ibv {
             using ibv_wc::dlid_path_bits;
         public:
             [[nodiscard]]
-            constexpr uint64_t getId() const {
-                return wr_id;
-            }
+            constexpr uint64_t getId() const;
 
             [[nodiscard]]
-            constexpr Status getStatus() const {
-                return static_cast<Status>(status);
-            }
+            constexpr Status getStatus() const;
 
             [[nodiscard]]
-            constexpr bool isSuccessful() const {
-                return getStatus() == Status::SUCCESS;
-            }
+            constexpr bool isSuccessful() const;
 
             [[nodiscard]]
-            explicit constexpr operator bool() const {
-                return isSuccessful();
-            }
+            explicit constexpr operator bool() const;
 
             [[nodiscard]]
-            constexpr Opcode getOpcode() const {
-                return static_cast<Opcode>(opcode);
-            }
+            constexpr Opcode getOpcode() const;
 
             [[nodiscard]]
-            constexpr bool hasImmData() const {
-                return testFlag(Flag::WITH_IMM);
-            }
+            constexpr bool hasImmData() const;
 
             [[nodiscard]]
-            constexpr bool hasInvRkey() const {
-                return testFlag(Flag::WITH_INV);
-            }
+            constexpr bool hasInvRkey() const;
 
             [[nodiscard]]
-            constexpr uint32_t getImmData() const {
-                checkCondition(hasImmData());
-                return imm_data;
-            }
+            constexpr uint32_t getImmData() const;
 
             [[nodiscard]]
-            constexpr uint32_t getInvRkey() const {
-                checkCondition(hasInvRkey());
-                return imm_data;
-            }
+            constexpr uint32_t getInvRkey() const;
 
             [[nodiscard]]
-            constexpr uint32_t getQueuePairNumber() const {
-                return qp_num;
-            }
+            constexpr uint32_t getQueuePairNumber() const;
 
             [[nodiscard]]
-            constexpr uint32_t getSourceQueuePair() const {
-                return src_qp;
-            }
+            constexpr uint32_t getSourceQueuePair() const;
 
             [[nodiscard]]
-            constexpr bool testFlag(Flag flag) const {
-                const auto rawFlag = static_cast<ibv_wc_flags>(flag);
-                return (wc_flags & rawFlag) == rawFlag;
-            }
+            constexpr bool testFlag(Flag flag) const;
 
             [[nodiscard]]
-            constexpr uint16_t getPkeyIndex() const {
-                return pkey_index;
-            }
+            constexpr uint16_t getPkeyIndex() const;
 
             [[nodiscard]]
-            constexpr uint16_t getSlid() const {
-                return slid;
-            }
+            constexpr uint16_t getSlid() const;
 
             [[nodiscard]]
-            constexpr uint8_t getSl() const {
-                return sl;
-            }
+            constexpr uint8_t getSl() const;
 
             [[nodiscard]]
-            constexpr uint8_t getDlidPathBits() const {
-                return dlid_path_bits;
-            }
+            constexpr uint8_t getDlidPathBits() const;
 
         private:
-            constexpr static void checkCondition(bool condition) {
-                if (not condition) {
-                    throw std::logic_error("Invalid workcompletion data access");
-                }
-            }
+            constexpr static void checkCondition(bool condition);
         };
 
         static_assert(sizeof(WorkCompletion) == sizeof(ibv_wc));
 
         [[nodiscard]]
-        inline std::string to_string(Opcode opcode) {
-            switch (opcode) {
-                case Opcode::SEND:
-                    return "IBV_WC_SEND";
-                case Opcode::RDMA_WRITE:
-                    return "IBV_WC_RDMA_WRITE";
-                case Opcode::RDMA_READ:
-                    return "IBV_WC_RDMA_READ";
-                case Opcode::COMP_SWAP:
-                    return "IBV_WC_COMP_SWAP";
-                case Opcode::FETCH_ADD:
-                    return "IBV_WC_FETCH_ADD";
-                case Opcode::BIND_MW:
-                    return "IBV_WC_BIND_MW";
-                case Opcode::LOCAL_INV:
-                    return "IBV_WC_LOCAL_INV";
-                case Opcode::RECV:
-                    return "IBV_WC_RECV";
-                case Opcode::RECV_RDMA_WITH_IMM:
-                    return "IBV_WC_RECV_RDMA_WITH_IMM";
-            }
-            __builtin_unreachable();
-        }
+        inline std::string to_string(Opcode opcode);
 
         [[nodiscard]]
-        inline std::string to_string(Status status) {
-            return ibv_wc_status_str(static_cast<ibv_wc_status>(status));
-        }
+        inline std::string to_string(Status status);
     } // namespace workcompletion
 
     namespace ah {
@@ -446,80 +323,52 @@ namespace ibv {
         public:
             /// Global Routing Header (GRH) attributes
             [[nodiscard]]
-            const GlobalRoute &getGrh() const {
-                return *reinterpret_cast<const GlobalRoute *>(&grh);
-            }
+            const GlobalRoute &getGrh() const;
 
             /// Global Routing Header (GRH) attributes
-            constexpr void setGrh(const GlobalRoute &grh) {
-                this->grh = grh;
-            }
+            constexpr void setGrh(const GlobalRoute &grh);
 
             /// Destination LID
             [[nodiscard]]
-            constexpr uint16_t getDlid() const {
-                return dlid;
-            }
+            constexpr uint16_t getDlid() const;
 
             /// Destination LID
-            constexpr void setDlid(uint16_t dlid) {
-                this->dlid = dlid;
-            }
+            constexpr void setDlid(uint16_t dlid);
 
             /// Service Level
             [[nodiscard]]
-            constexpr uint8_t getSl() const {
-                return sl;
-            }
+            constexpr uint8_t getSl() const;
 
             /// Service Level
-            constexpr void setSl(uint8_t sl) {
-                this->sl = sl;
-            }
+            constexpr void setSl(uint8_t sl);
 
             /// Source path bits
             [[nodiscard]]
-            constexpr uint8_t getSrcPathBits() const {
-                return src_path_bits;
-            }
+            constexpr uint8_t getSrcPathBits() const;
 
             /// Source path bits
-            constexpr void setSrcPathBits(uint8_t src_path_bits) {
-                this->src_path_bits = src_path_bits;
-            }
+            constexpr void setSrcPathBits(uint8_t src_path_bits);
 
             /// Maximum static rate
             [[nodiscard]]
-            constexpr uint8_t getStaticRate() const {
-                return static_rate;
-            }
+            constexpr uint8_t getStaticRate() const;
 
             /// Maximum static rate
-            constexpr void setStaticRate(uint8_t static_rate) {
-                this->static_rate = static_rate;
-            }
+            constexpr void setStaticRate(uint8_t static_rate);
 
             /// GRH attributes are valid
             [[nodiscard]]
-            constexpr bool getIsGlobal() const {
-                return static_cast<bool>(is_global);
-            }
+            constexpr bool getIsGlobal() const;
 
             /// GRH attributes are valid
-            constexpr void setIsGlobal(bool is_global) {
-                this->is_global = static_cast<uint8_t>(is_global);
-            }
+            constexpr void setIsGlobal(bool is_global);
 
             /// Physical port number
             [[nodiscard]]
-            constexpr uint8_t getPortNum() const {
-                return port_num;
-            }
+            constexpr uint8_t getPortNum() const;
 
             /// Physical port number
-            constexpr void setPortNum(uint8_t port_num) {
-                this->port_num = port_num;
-            }
+            constexpr void setPortNum(uint8_t port_num);
         };
 
         static_assert(sizeof(Attributes) == sizeof(ibv_ah_attr));
@@ -531,10 +380,7 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_destroy_ah(reinterpret_cast<ibv_ah *>(ptr));
-                internal::checkStatusNoThrow("ibv_destroy_ah", status);
-            }
+            static void operator delete(void *ptr) noexcept;
         };
 
         static_assert(sizeof(AddressHandle) == sizeof(ibv_ah));
@@ -554,37 +400,22 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_destroy_cq(reinterpret_cast<ibv_cq *>(ptr));
-                internal::checkStatusNoThrow("ibv_destroy_cq", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             /// Resize the CompletionQueue to have at last newCqe entries
-            void resize(int newCqe) {
-                const auto status = ibv_resize_cq(this, newCqe);
-                internal::checkStatus("ibv_resize_cq", status);
-            }
+            void resize(int newCqe);
 
             /// Acknowledge nEvents events on the CompletionQueue
-            void ackEvents(unsigned int nEvents) {
-                ibv_ack_cq_events(this, nEvents);
-            }
+            void ackEvents(unsigned int nEvents);
 
             /// Poll the CompletionQueue for the next numEntries WorkCompletions and put them into resultArray
             /// @returns the number of completions found
             [[nodiscard]]
-            int poll(int numEntries, workcompletion::WorkCompletion *resultArray) {
-                const auto res = ibv_poll_cq(this, numEntries, resultArray);
-                internal::check("ibv_poll_cq", res >= 0);
-                return res;
-            }
+            int poll(int numEntries, workcompletion::WorkCompletion *resultArray);
 
             /// Request completion notification event on this CompletionQueue for the associated CompletionEventChannel
             /// @param solicitedOnly if the events should only be produced for workrequests with Flags::SOLICITED
-            void requestNotify(bool solicitedOnly) {
-                const auto status = ibv_req_notify_cq(this, static_cast<int>(solicitedOnly));
-                internal::checkStatus("ibv_req_notify_cq", status);
-            }
+            void requestNotify(bool solicitedOnly);
         };
 
         static_assert(sizeof(CompletionQueue) == sizeof(ibv_cq));
@@ -596,21 +427,12 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_destroy_comp_channel(reinterpret_cast<ibv_comp_channel *>(ptr));
-                internal::checkStatusNoThrow("ibv_destroy_comp_channel", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             /// Wait for the next completion event in this CompletionEventChannel
             /// @returns the CompletionQueue, that got the event and the CompletionQueues QP context @see setQpContext
             [[nodiscard]]
-            std::tuple<CompletionQueue *, void *> getEvent() {
-                CompletionQueue *cqRet;
-                void *contextRet;
-                const auto status = ibv_get_cq_event(this, reinterpret_cast<ibv_cq **>(&cqRet), &contextRet);
-                internal::checkStatus("ibv_get_cq_event", status);
-                return {cqRet, contextRet};
-            }
+            std::tuple<CompletionQueue *, void *> getEvent();
         };
 
         static_assert(sizeof(CompletionEventChannel) == sizeof(ibv_comp_channel));
@@ -625,21 +447,7 @@ namespace ibv {
     };
 
     [[nodiscard]]
-    inline std::string to_string(Mtu mtu) {
-        switch (mtu) {
-            case Mtu::_256:
-                return "IBV_MTU_256";
-            case Mtu::_512:
-                return "IBV_MTU_512";
-            case Mtu::_1024:
-                return "IBV_MTU_1024";
-            case Mtu::_2048:
-                return "IBV_MTU_2048";
-            case Mtu::_4096:
-                return "IBV_MTU_4096";
-        }
-        __builtin_unreachable();
-    }
+    inline std::string to_string(Mtu mtu);
 
     namespace port {
         enum class State : std::underlying_type_t<ibv_port_state> {
@@ -702,124 +510,83 @@ namespace ibv {
         public:
             /// Logical port state
             [[nodiscard]]
-            constexpr State getState() const {
-                return static_cast<State>(state);
-            }
+            constexpr State getState() const;
 
             /// Max MTU supported by port
             [[nodiscard]]
-            constexpr Mtu getMaxMtu() const {
-                return static_cast<Mtu>(max_mtu);
-            }
+            constexpr Mtu getMaxMtu() const;
 
             /// Actual MTU
             [[nodiscard]]
-            constexpr Mtu getActiveMtu() const {
-                return static_cast<Mtu>(active_mtu);
-            }
+            constexpr Mtu getActiveMtu() const;
 
             /// Length of source GID table
             [[nodiscard]]
-            constexpr int getGidTblLen() const {
-                return gid_tbl_len;
-            }
+            constexpr int getGidTblLen() const;
 
             /// test port capabilities
             [[nodiscard]]
-            constexpr bool hasCapability(CapabilityFlag flag) {
-                const auto rawFlag = static_cast<ibv_port_cap_flags>(flag);
-                return (port_cap_flags & rawFlag) == rawFlag;
-            }
+            constexpr bool hasCapability(CapabilityFlag flag);
 
             /// Maximum message size
             [[nodiscard]]
-            constexpr uint32_t getMaxMsgSize() const {
-                return max_msg_sz;
-            }
+            constexpr uint32_t getMaxMsgSize() const;
 
             /// Bad P_Key counter
             [[nodiscard]]
-            constexpr uint32_t getBadPkeyCntr() const {
-                return bad_pkey_cntr;
-            }
+            constexpr uint32_t getBadPkeyCntr() const;
 
             /// Q_Key violation counter
             [[nodiscard]]
-            constexpr uint32_t getQkeyViolCntr() const {
-                return qkey_viol_cntr;
-            }
+            constexpr uint32_t getQkeyViolCntr() const;
 
             /// Length of partition table
             [[nodiscard]]
-            constexpr uint16_t getPkeyTblLen() const {
-                return pkey_tbl_len;
-            }
+            constexpr uint16_t getPkeyTblLen() const;
 
             /// Base port LID
             [[nodiscard]]
-            constexpr uint16_t getLid() const {
-                return lid;
-            }
+            constexpr uint16_t getLid() const;
 
             /// SM LID
             [[nodiscard]]
-            constexpr uint16_t getSmLid() const {
-                return sm_lid;
-            }
+            constexpr uint16_t getSmLid() const;
 
             /// LMC of LID
             [[nodiscard]]
-            constexpr uint8_t getLmc() const {
-                return lmc;
-            }
+            constexpr uint8_t getLmc() const;
 
             /// Maximum number of VLs
             [[nodiscard]]
-            constexpr uint8_t getMaxVlNum() const {
-                return max_vl_num;
-            }
+            constexpr uint8_t getMaxVlNum() const;
 
             /// SM service level
             [[nodiscard]]
-            constexpr uint8_t getSmSl() const {
-                return sm_sl;
-            }
+            constexpr uint8_t getSmSl() const;
 
             /// Subnet propagation delay
             [[nodiscard]]
-            constexpr uint8_t getSubnetTimeout() const {
-                return subnet_timeout;
-            }
+            constexpr uint8_t getSubnetTimeout() const;
 
             /// Type of initialization performed by SM
             [[nodiscard]]
-            constexpr uint8_t getInitTypeReply() const {
-                return init_type_reply;
-            }
+            constexpr uint8_t getInitTypeReply() const;
 
             /// Currently active link width
             [[nodiscard]]
-            constexpr uint8_t getActiveWidth() const {
-                return active_width;
-            }
+            constexpr uint8_t getActiveWidth() const;
 
             /// Currently active link speed
             [[nodiscard]]
-            constexpr uint8_t getActiveSpeed() const {
-                return active_speed;
-            }
+            constexpr uint8_t getActiveSpeed() const;
 
             /// Physical port state
             [[nodiscard]]
-            constexpr uint8_t getPhysState() const {
-                return phys_state;
-            }
+            constexpr uint8_t getPhysState() const;
 
             /// link layer protocol of the port
             [[nodiscard]]
-            constexpr uint8_t getLinkLayer() const {
-                return link_layer;
-            }
+            constexpr uint8_t getLinkLayer() const;
         };
 
         static_assert(sizeof(Attributes) == sizeof(ibv_port_attr));
@@ -903,244 +670,163 @@ namespace ibv {
         public:
             /// The Firmware verssion
             [[nodiscard]]
-            constexpr const char *getFwVer() const {
-                return static_cast<const char *>(fw_ver);
-            }
+            constexpr const char *getFwVer() const;
 
             /// Node GUID (in network byte order)
             [[nodiscard]]
-            constexpr uint64_t getNodeGuid() const {
-                return node_guid;
-            }
+            constexpr uint64_t getNodeGuid() const;
 
             /// System image GUID (in network byte order)
             [[nodiscard]]
-            constexpr uint64_t getSysImageGuid() const {
-                return sys_image_guid;
-            }
+            constexpr uint64_t getSysImageGuid() const;
 
             /// Largest contiguous block that can be registered
             [[nodiscard]]
-            constexpr uint64_t getMaxMrSize() const {
-                return max_mr_size;
-            }
+            constexpr uint64_t getMaxMrSize() const;
 
             /// Supported memory shift sizes
             [[nodiscard]]
-            constexpr uint64_t getPageSizeCap() const {
-                return page_size_cap;
-            }
+            constexpr uint64_t getPageSizeCap() const;
 
             /// Vendor ID, per IEEE
             [[nodiscard]]
-            constexpr uint32_t getVendorId() const {
-                return vendor_id;
-            }
+            constexpr uint32_t getVendorId() const;
 
             /// Vendor supplied part ID
             [[nodiscard]]
-            constexpr uint32_t getVendorPartId() const {
-                return vendor_part_id;
-            }
+            constexpr uint32_t getVendorPartId() const;
 
             /// Hardware version
             [[nodiscard]]
-            constexpr uint32_t getHwVer() const {
-                return hw_ver;
-            }
+            constexpr uint32_t getHwVer() const;
 
             /// Maximum number of supported QPs
             [[nodiscard]]
-            constexpr int getMaxQp() const {
-                return max_qp;
-            }
+            constexpr int getMaxQp() const;
 
             /// Maximum number of outstanding WR on any work queue
             [[nodiscard]]
-            constexpr int getMaxQpWr() const {
-                return max_qp_wr;
-            }
+            constexpr int getMaxQpWr() const;
 
             /// Check for a capability
             [[nodiscard]]
-            constexpr bool hasCapability(CapabilityFlag flag) const {
-                const auto rawFlag = static_cast<ibv_device_cap_flags>(flag);
-                return (device_cap_flags & rawFlag) == rawFlag;
-            }
+            constexpr bool hasCapability(CapabilityFlag flag) const;
 
             /// Maximum number of s/g per WR for SQ & RQ of QP for non RDMA Read operations
             [[nodiscard]]
-            constexpr int getMaxSge() const {
-                return max_sge;
-            }
+            constexpr int getMaxSge() const;
 
             /// Maximum number of s/g per WR for RDMA Read operations
             [[nodiscard]]
-            constexpr int getMaxSgeRd() const {
-                return max_sge_rd;
-            }
+            constexpr int getMaxSgeRd() const;
 
             /// Maximum number of supported CQs
             [[nodiscard]]
-            constexpr int getMaxCq() const {
-                return max_cq;
-            }
+            constexpr int getMaxCq() const;
 
             /// Maximum number of CQE capacity per CQ
             [[nodiscard]]
-            constexpr int getMaxCqe() const {
-                return max_cqe;
-            }
+            constexpr int getMaxCqe() const;
 
             /// Maximum number of supported MRs
             [[nodiscard]]
-            constexpr int getMaxMr() const {
-                return max_mr;
-            }
+            constexpr int getMaxMr() const;
 
             /// Maximum number of supported PDs
             [[nodiscard]]
-            constexpr int getMaxPd() const {
-                return max_pd;
-            }
+            constexpr int getMaxPd() const;
 
             /// Maximum number of RDMA Read & Atomic operations that can be outstanding per QP
             [[nodiscard]]
-            constexpr int getMaxQpRdAtom() const {
-                return max_qp_rd_atom;
-            }
+            constexpr int getMaxQpRdAtom() const;
 
             /// Maximum number of RDMA Read & Atomic operations that can be outstanding per EEC
             [[nodiscard]]
-            constexpr int getMaxEeRdAtom() const {
-                return max_ee_rd_atom;
-            }
+            constexpr int getMaxEeRdAtom() const;
 
             /// Maximum number of resources used for RDMA Read & Atomic operations by this HCA as the Target
             [[nodiscard]]
-            constexpr int getMaxResRdAtom() const {
-                return max_res_rd_atom;
-            }
+            constexpr int getMaxResRdAtom() const;
 
             /// Maximum depth per QP for initiation of RDMA Read & Atomic operations
             [[nodiscard]]
-            constexpr int getMaxQpInitRdAtom() const {
-                return max_qp_init_rd_atom;
-            }
+            constexpr int getMaxQpInitRdAtom() const;
 
             /// Maximum depth per EEC for initiation of RDMA Read & Atomic operations
             [[nodiscard]]
-            constexpr int getMaxEeInitRdAtom() const {
-                return max_ee_init_rd_atom;
-            }
+            constexpr int getMaxEeInitRdAtom() const;
 
             /// Atomic operations support level
             [[nodiscard]]
-            constexpr AtomicCapabilities getAtomicCap() const {
-                return static_cast<AtomicCapabilities>(atomic_cap);
-            }
+            constexpr AtomicCapabilities getAtomicCap() const;
 
             /// Maximum number of supported EE contexts
             [[nodiscard]]
-            constexpr int getMaxEe() const {
-                return max_ee;
-            }
+            constexpr int getMaxEe() const;
 
             /// Maximum number of supported RD domains
             [[nodiscard]]
-            constexpr int getMaxRdd() const {
-                return max_rdd;
-            }
+            constexpr int getMaxRdd() const;
 
             /// Maximum number of supported MWs
             [[nodiscard]]
-            constexpr int getMaxMw() const {
-                return max_mw;
-            }
+            constexpr int getMaxMw() const;
 
             /// Maximum number of supported raw IPv6 datagram QPs
             [[nodiscard]]
-            constexpr int getMaxRawIpv6Qp() const {
-                return max_raw_ipv6_qp;
-            }
+            constexpr int getMaxRawIpv6Qp() const;
 
             /// Maximum number of supported Ethertype datagram QPs
             [[nodiscard]]
-            constexpr int getMaxRawEthyQp() const {
-                return max_raw_ethy_qp;
-            }
+            constexpr int getMaxRawEthyQp() const;
 
             /// Maximum number of supported multicast groups
             [[nodiscard]]
-            constexpr int getMaxMcastGrp() const {
-                return max_mcast_grp;
-            }
+            constexpr int getMaxMcastGrp() const;
 
             /// Maximum number of QPs per multicast group which can be attached
             [[nodiscard]]
-            constexpr int getMaxMcastQpAttach() const {
-                return max_mcast_qp_attach;
-            }
+            constexpr int getMaxMcastQpAttach() const;
 
             /// Maximum number of QPs which can be attached to multicast groups
             [[nodiscard]]
-            constexpr int getMaxTotalMcastQpAttach() const {
-                return max_total_mcast_qp_attach;
-            }
+            constexpr int getMaxTotalMcastQpAttach() const;
 
             /// Maximum number of supported address handles
             [[nodiscard]]
-            constexpr int getMaxAh() const {
-                return max_ah;
-            }
+            constexpr int getMaxAh() const;
 
             /// Maximum number of supported FMRs
             [[nodiscard]]
-            constexpr int getMaxFmr() const {
-                return max_fmr;
-            }
+            constexpr int getMaxFmr() const;
 
             /// Maximum number of (re)maps per FMR before an unmap operation in required
             [[nodiscard]]
-            constexpr int getMaxMapPerFmr() const {
-                return max_map_per_fmr;
-            }
+            constexpr int getMaxMapPerFmr() const;
 
             /// Maximum number of supported SRQs
             [[nodiscard]]
-            constexpr int getMaxSrq() const {
-                return max_srq;
-            }
+            constexpr int getMaxSrq() const;
 
             /// Maximum number of WRs per SRQ
             [[nodiscard]]
-            constexpr int getMaxSrqWr() const {
-                return max_srq_wr;
-            }
+            constexpr int getMaxSrqWr() const;
 
             /// Maximum number of s/g per SRQ
             [[nodiscard]]
-            constexpr int getMaxSrqSge() const {
-                return max_srq_sge;
-            }
+            constexpr int getMaxSrqSge() const;
 
             /// Maximum number of partitions
             [[nodiscard]]
-            constexpr uint16_t getMaxPkeys() const {
-                return max_pkeys;
-            }
+            constexpr uint16_t getMaxPkeys() const;
 
             /// Local CA ack delay
             [[nodiscard]]
-            constexpr uint8_t getLocalCaAckDelay() const {
-                return local_ca_ack_delay;
-            }
+            constexpr uint8_t getLocalCaAckDelay() const;
 
             /// Number of physical ports
             [[nodiscard]]
-            constexpr uint8_t getPhysPortCnt() const {
-                return phys_port_cnt;
-            }
+            constexpr uint8_t getPhysPortCnt() const;
         };
 
         static_assert(sizeof(Attributes) == sizeof(ibv_device_attr));
@@ -1154,24 +840,17 @@ namespace ibv {
             using ibv_device::dev_path;
             using ibv_device::ibdev_path;
         public:
+            /// A human-readable name associated with the RDMA device
             [[nodiscard]]
-            const char *getName() {
-                return ibv_get_device_name(this);
-            }
+            const char *getName();
 
+            /// Global Unique IDentifier (GUID) of the RDMA device
             [[nodiscard]]
-            uint64_t getGUID() {
-                return ibv_get_device_guid(this);
-            }
+            uint64_t getGUID();
 
             /// Open a RDMA device context
             [[nodiscard]]
-            std::unique_ptr<context::Context> open() {
-                using Ctx = context::Context;
-                const auto context = ibv_open_device(this);
-                internal::checkPtr("ibv_open_device", context);
-                return std::unique_ptr<Ctx>(reinterpret_cast<Ctx *>(context));
-            }
+            std::unique_ptr<context::Context> open();
         };
 
         static_assert(sizeof(Device) == sizeof(ibv_device));
@@ -1182,57 +861,29 @@ namespace ibv {
 
         public:
             /// Get a list of available RDMA devices
-            DeviceList() : devices(reinterpret_cast<Device **>(ibv_get_device_list(&num_devices))) {
-                internal::checkPtr("ibv_get_device_list", devices);
-            }
+            DeviceList();
 
-            ~DeviceList() {
-                if (devices != nullptr) {
-                    ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
-                }
-            }
+            ~DeviceList();
 
             DeviceList(const DeviceList &) = delete;
 
             DeviceList &operator=(const DeviceList &) = delete;
 
-            DeviceList(DeviceList &&other) noexcept {
-                devices = other.devices;
-                other.devices = nullptr;
-                num_devices = other.num_devices;
-                other.num_devices = 0;
-            }
+            DeviceList(DeviceList &&other) noexcept;
 
-            constexpr DeviceList &operator=(DeviceList &&other) noexcept {
-                if (devices != nullptr) {
-                    ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
-                }
-                devices = other.devices;
-                other.devices = nullptr;
-                num_devices = other.num_devices;
-                other.num_devices = 0;
-                return *this;
-            }
+            constexpr DeviceList &operator=(DeviceList &&other) noexcept;
 
             [[nodiscard]]
-            constexpr Device **begin() {
-                return devices;
-            }
+            constexpr Device **begin();
 
             [[nodiscard]]
-            constexpr Device **end() {
-                return &devices[num_devices];
-            }
+            constexpr Device **end();
 
             [[nodiscard]]
-            constexpr size_t size() const {
-                return static_cast<size_t>(num_devices);
-            }
+            constexpr size_t size() const;
 
             [[nodiscard]]
-            constexpr Device *&operator[](int idx) {
-                return devices[idx];
-            }
+            constexpr Device *&operator[](int idx);
         };
     }  // namespace device
 
@@ -1254,21 +905,7 @@ namespace ibv {
         };
 
         [[nodiscard]]
-        inline std::string to_string(ReregErrorCode ec) {
-            switch (ec) {
-                case ReregErrorCode::INPUT:
-                    return "IBV_REREG_MR_ERR_INPUT";
-                case ReregErrorCode::DONT_FORK_NEW:
-                    return "IBV_REREG_MR_ERR_DONT_FORK_NEW";
-                case ReregErrorCode::DO_FORK_OLD:
-                    return "IBV_REREG_MR_ERR_DO_FORK_OLD";
-                case ReregErrorCode::CMD:
-                    return "IBV_REREG_MR_ERR_CMD";
-                case ReregErrorCode::CMD_AND_DO_FORK_NEW:
-                    return "IBV_REREG_MR_ERR_CMD_AND_DO_FORK_NEW";
-            }
-            __builtin_unreachable();
-        }
+        inline std::string to_string(ReregErrorCode ec);
 
         struct Slice : public ibv_sge {
         };
@@ -1278,9 +915,7 @@ namespace ibv {
             uint32_t rkey;
 
             [[nodiscard]]
-            constexpr RemoteAddress offset(uint64_t offset) const noexcept {
-                return RemoteAddress{address + offset, rkey};
-            }
+            constexpr RemoteAddress offset(uint64_t offset) const noexcept;
         };
 
         class MemoryRegion : public ibv_mr, public internal::PointerOnly {
@@ -1294,91 +929,48 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_dereg_mr(reinterpret_cast<ibv_mr *>(ptr));
-                internal::checkStatusNoThrow("ibv_dereg_mr", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             [[nodiscard]]
-            context::Context *getContext() const {
-                return reinterpret_cast<context::Context *>(context);
-            }
+            context::Context *getContext() const;
 
             [[nodiscard]]
-            protectiondomain::ProtectionDomain *getPd() const {
-                return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
-            }
+            protectiondomain::ProtectionDomain *getPd() const;
 
             [[nodiscard]]
-            constexpr void *getAddr() const {
-                return addr;
-            }
+            constexpr void *getAddr() const;
 
             [[nodiscard]]
-            constexpr size_t getLength() const {
-                return length;
-            }
+            constexpr size_t getLength() const;
 
             [[nodiscard]]
-            constexpr uint32_t getHandle() const {
-                return handle;
-            }
+            constexpr uint32_t getHandle() const;
 
             [[nodiscard]]
-            constexpr uint32_t getLkey() const {
-                return lkey;
-            }
+            constexpr uint32_t getLkey() const;
 
             [[nodiscard]]
-            constexpr uint32_t getRkey() const {
-                return rkey;
-            }
+            constexpr uint32_t getRkey() const;
 
             [[nodiscard]]
-            Slice getSlice() {
-                return Slice{{reinterpret_cast<uintptr_t>(addr), static_cast<uint32_t>(length), lkey}};
-            }
+            Slice getSlice();
 
             [[nodiscard]]
-            Slice getSlice(uint32_t offset, uint32_t sliceLength) {
-                return Slice{{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey}};
-            }
+            Slice getSlice(uint32_t offset, uint32_t sliceLength);
 
             [[nodiscard]]
-            RemoteAddress getRemoteAddress() {
-                return RemoteAddress{reinterpret_cast<uint64_t>(addr), rkey};
-            }
+            RemoteAddress getRemoteAddress();
 
             /// Reregister the MemoryRegion to modify the attribotes of an existing MemoryRegion,
             /// reusing resources whenever possible
             void reRegister(std::initializer_list<ReregFlag> changeFlags, protectiondomain::ProtectionDomain *newPd,
-                            void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags) {
-                int changes = 0;
-                for (auto change : changeFlags) {
-                    changes |= static_cast<ibv_rereg_mr_flags>(change);
-                }
-                int access = 0;
-                for (auto accessFlag : accessFlags) {
-                    access |= static_cast<ibv_access_flags>(accessFlag);
-                }
-                const auto status = // TODO
-                        ibv_rereg_mr(this, changes, reinterpret_cast<ibv_pd *>(newPd), newAddr, newLength, access);
-
-                if (status != 0) {
-                    const auto res = static_cast<ReregErrorCode>(status);
-                    throw std::runtime_error("ibv_rereg_mr failed with: " + to_string(res));
-                }
-            }
+                            void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags);
         };
 
         static_assert(sizeof(MemoryRegion) == sizeof(ibv_mr));
 
         [[nodiscard]]
-        inline std::string to_string(const MemoryRegion &mr) {
-            std::ostringstream addr;
-            addr << mr.getAddr();
-            return std::string("ptr=") + addr.str() + " size=" + std::to_string(mr.getLength()) + " key={..}";
-        }
+        inline std::string to_string(const MemoryRegion &mr);
     } // namespace memoryregion
 
     namespace workrequest {
@@ -1419,176 +1011,116 @@ namespace ibv {
             using ibv_send_wr::bind_mw;
             using ibv_send_wr::tso;
         public:
-            constexpr SendWr() : ibv_send_wr{} {}
+            constexpr SendWr();
 
-            constexpr void setId(uint64_t id) {
-                wr_id = id;
-            }
+            /// A user defined Identifier
+            constexpr void setId(uint64_t id);
 
+            /// A user defined Identifier
             [[nodiscard]]
-            constexpr uint64_t getId() const {
-                return wr_id;
-            }
+            constexpr uint64_t getId() const;
 
-            constexpr void setNext(SendWr *wrList) {
-                next = wrList;
-            }
+            /// Pointer to the next WorkRequest. nullptr if last
+            constexpr void setNext(SendWr *wrList);
 
-            constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size) {
-                sg_list = scatterGatherArray;
-                num_sge = size;
-            }
+            /// Set the scatter / gather array
+            constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size);
 
-            constexpr void setFlag(Flags flag) {
-                send_flags |= static_cast<ibv_send_flags>(flag);
-            }
+            /// Set a single flag specifying the work request properties
+            constexpr void setFlag(Flags flag);
 
-            constexpr void setFence() {
-                setFlag(Flags::FENCE);
-            }
+            constexpr void setFence();
 
-            constexpr void setSignaled() {
-                setFlag(Flags::SIGNALED);
-            }
+            constexpr void setSignaled();
 
-            constexpr void setSolicited() {
-                setFlag(Flags::SOLICITED);
-            }
+            constexpr void setSolicited();
 
-            constexpr void setInline() {
-                setFlag(Flags::INLINE);
-            }
+            constexpr void setInline();
 
-            constexpr void setIpCsum() {
-                setFlag(Flags::IP_CSUM);
-            }
+            constexpr void setIpCsum();
 
-            constexpr void setFlags(std::initializer_list<Flags> flags) {
-                send_flags = 0;
-                for (const auto flag : flags) {
-                    setFlag(flag);
-                }
-            }
+            /// Set multiple flags specifying the work request properties
+            constexpr void setFlags(std::initializer_list<Flags> flags);
 
         protected:
-            constexpr void setOpcode(Opcode opcode) {
-                this->opcode = static_cast<ibv_wr_opcode>(opcode);
-            }
+            constexpr void setOpcode(Opcode opcode);
 
-            constexpr void setImmData(uint32_t data) {
-                imm_data = data;
-            }
+            /// Set Immediate data for this workrequest
+            constexpr void setImmData(uint32_t data);
 
             [[nodiscard]]
-            constexpr decltype(wr) &getWr() {
-                return wr;
-            }
+            constexpr decltype(wr) &getWr();
         };
 
         static_assert(sizeof(SendWr) == sizeof(ibv_send_wr));
 
         // internal
         struct Rdma : SendWr {
-            constexpr void setRemoteAddress(memoryregion::RemoteAddress remoteAddress) {
-                getWr().rdma.remote_addr = remoteAddress.address;
-                getWr().rdma.rkey = remoteAddress.rkey;
-            }
+            /// Set the RemoteAddress, this operation should work on
+            constexpr void setRemoteAddress(memoryregion::RemoteAddress remoteAddress);
 
             [[deprecated]]
-            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) {
-                getWr().rdma.remote_addr = remote_addr;
-                getWr().rdma.rkey = rkey;
-            }
+            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey);
         };
 
         struct Write : Rdma {
-            constexpr Write() {
-                SendWr::setOpcode(Opcode::RDMA_WRITE);
-            }
+            constexpr Write();
         };
 
         struct WriteWithImm : Write {
-            constexpr WriteWithImm() {
-                WriteWithImm::setOpcode(Opcode::RDMA_WRITE_WITH_IMM);
-            }
+            constexpr WriteWithImm();
 
             using SendWr::setImmData;
         };
 
         struct Send : SendWr {
-            constexpr Send() {
-                SendWr::setOpcode(Opcode::SEND);
-            }
+            constexpr Send();
 
-            void setUDAddressHandle(ah::AddressHandle &ah) {
-                getWr().ud.ah = &ah;
-            }
+            /// Address handle for the remote node address
+            constexpr void setUDAddressHandle(ah::AddressHandle &ah);
 
-            constexpr void setUDRemoteQueue(uint32_t qpn, uint32_t qkey) {
-                getWr().ud.remote_qpn = qpn;
-                getWr().ud.remote_qkey = qkey;
-            }
+            /// QueuePair number and QKey of the destination QueuePair
+            constexpr void setUDRemoteQueue(uint32_t qpn, uint32_t qkey);
         };
 
         struct SendWithImm : SendWr {
-            constexpr SendWithImm() {
-                SendWr::setOpcode(Opcode::SEND_WITH_IMM);
-            }
+            constexpr SendWithImm();
 
             using SendWr::setImmData;
         };
 
         struct Read : Rdma {
-            constexpr Read() {
-                SendWr::setOpcode(Opcode::RDMA_READ);
-            }
+            constexpr Read();
         };
 
         // internal
         struct Atomic : SendWr {
-            constexpr void setRemoteAddress(memoryregion::RemoteAddress remoteAddress) {
-                getWr().atomic.remote_addr = remoteAddress.address;
-                getWr().atomic.rkey = remoteAddress.rkey;
-            }
+            /// Set the RemoteAddress, this operation should work on
+            constexpr void setRemoteAddress(memoryregion::RemoteAddress remoteAddress);
 
             [[deprecated]]
-            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey) {
-                getWr().atomic.remote_addr = remote_addr;
-                getWr().atomic.rkey = rkey;
-            }
+            constexpr void setRemoteAddress(uint64_t remote_addr, uint32_t rkey);
         };
 
         struct AtomicCompareSwap : Atomic {
-            constexpr AtomicCompareSwap() {
-                SendWr::setOpcode(Opcode::ATOMIC_CMP_AND_SWP);
-            }
+            constexpr AtomicCompareSwap();
 
-            constexpr AtomicCompareSwap(uint64_t compare, uint64_t swap) : AtomicCompareSwap() {
-                setCompareValue(compare);
-                setSwapValue(swap);
-            }
+            constexpr AtomicCompareSwap(uint64_t compare, uint64_t swap);
 
-            constexpr void setCompareValue(uint64_t value) {
-                getWr().atomic.compare_add = value;
-            }
+            /// Compare operand
+            constexpr void setCompareValue(uint64_t value);
 
-            constexpr void setSwapValue(uint64_t value) {
-                getWr().atomic.swap = value;
-            }
+            /// Swap operand
+            constexpr void setSwapValue(uint64_t value);
         };
 
         struct AtomicFetchAdd : Atomic {
-            constexpr AtomicFetchAdd() {
-                SendWr::setOpcode(Opcode::ATOMIC_FETCH_AND_ADD);
-            }
+            constexpr AtomicFetchAdd();
 
-            explicit constexpr AtomicFetchAdd(uint64_t value) : AtomicFetchAdd() {
-                setAddValue(value);
-            }
+            explicit constexpr AtomicFetchAdd(uint64_t value);
 
-            constexpr void setAddValue(uint64_t value) {
-                getWr().atomic.compare_add = value;
-            }
+            /// Add operand
+            constexpr void setAddValue(uint64_t value);
         };
 
         class Recv : public ibv_recv_wr {
@@ -1598,26 +1130,17 @@ namespace ibv {
             using ibv_recv_wr::num_sge;
         public:
             /// User defined WR ID
-            constexpr void setId(uint64_t id) {
-                wr_id = id;
-            }
+            constexpr void setId(uint64_t id);
 
             /// User defined WR ID
             [[nodiscard]]
-            constexpr uint64_t getId() const {
-                return wr_id;
-            }
+            constexpr uint64_t getId() const;
 
             /// Pointer to next WR in list, NULL if last WR
-            constexpr void setNext(Recv *next) {
-                this->next = next;
-            }
+            constexpr void setNext(Recv *next);
 
             /// The Scatter/Gather array with size
-            constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size) {
-                sg_list = scatterGatherArray;
-                num_sge = size;
-            }
+            constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size);
         };
 
         static_assert(sizeof(Recv) == sizeof(ibv_recv_wr));
@@ -1634,6 +1157,7 @@ namespace ibv {
         public:
             using SendWorkRequest::SendWorkRequest;
 
+            /// Set the local address, the workrequest should operate on
             constexpr void setLocalAddress(const memoryregion::Slice &sge) {
                 SendWorkRequest::setSge(&slice, 1);
 
@@ -1655,27 +1179,16 @@ namespace ibv {
             using ibv_mw_bind_info::mw_access_flags;
         public:
             /// The MR to bind the MW to
-            void setMr(memoryregion::MemoryRegion &memoryregion) {
-                mr = &memoryregion;
-            }
+            constexpr void setMr(memoryregion::MemoryRegion &memoryregion);
 
             /// The address the MW should start at
-            constexpr void setAddr(uint64_t addr) {
-                this->addr = addr;
-            }
+            constexpr void setAddr(uint64_t addr);
 
             /// The length (in bytes) the MW should span
-            constexpr void setLength(uint64_t length) {
-                this->length = length;
-            }
+            constexpr void setLength(uint64_t length);
 
             /// Access flags to the MW
-            constexpr void setMwAccessFlags(std::initializer_list<AccessFlag> accessFlags) {
-                mw_access_flags = 0;
-                for (auto accessFlag : accessFlags) {
-                    mw_access_flags |= static_cast<ibv_access_flags>(accessFlag);
-                }
-            }
+            constexpr void setMwAccessFlags(std::initializer_list<AccessFlag> accessFlags);
         };
 
         static_assert(sizeof(BindInfo) == sizeof(ibv_mw_bind_info));
@@ -1686,23 +1199,14 @@ namespace ibv {
             using ibv_mw_bind::bind_info;
         public:
             /// User defined WR ID
-            constexpr void setWrId(uint64_t id) {
-                wr_id = id;
-            }
+            constexpr void setWrId(uint64_t id);
 
             // The send flags for the bind request
-            constexpr void setSendFlags(std::initializer_list<workrequest::Flags> flags) {
-                send_flags = 0;
-                for (auto flag : flags) {
-                    send_flags |= static_cast<ibv_send_flags>(flag);
-                }
-            }
+            constexpr void setSendFlags(std::initializer_list<workrequest::Flags> flags);
 
             /// MW bind information
             [[nodiscard]]
-            BindInfo &getBindInfo() {
-                return reinterpret_cast<BindInfo &>(bind_info);
-            }
+            BindInfo &getBindInfo();
         };
 
         static_assert(sizeof(Bind) == sizeof(ibv_mw_bind));
@@ -1716,35 +1220,22 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_dealloc_mw(reinterpret_cast<ibv_mw *>(ptr));
-                internal::checkStatusNoThrow("ibv_dealloc_mw", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             [[nodiscard]]
-            context::Context *getContext() const {
-                return reinterpret_cast<context::Context *>(context);
-            }
+            context::Context *getContext() const;
 
             [[nodiscard]]
-            protectiondomain::ProtectionDomain *getPd() const {
-                return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
-            }
+            protectiondomain::ProtectionDomain *getPd() const;
 
             [[nodiscard]]
-            constexpr uint32_t getRkey() const {
-                return rkey;
-            }
+            constexpr uint32_t getRkey() const;
 
             [[nodiscard]]
-            constexpr uint32_t getHandle() const {
-                return handle;
-            }
+            constexpr uint32_t getHandle() const;
 
             [[nodiscard]]
-            constexpr Type getType() {
-                return static_cast<Type>(type);
-            }
+            constexpr Type getType();
         };
 
         static_assert(sizeof(MemoryWindow) == sizeof(ibv_mw));
@@ -1774,8 +1265,7 @@ namespace ibv {
             using ibv_srq_attr::max_sge;
             using ibv_srq_attr::srq_limit;
         public:
-            explicit constexpr Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0) :
-                    ibv_srq_attr{max_wr, max_sge, srq_limit} {}
+            explicit constexpr Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0);
         };
 
         static_assert(sizeof(Attributes) == sizeof(ibv_srq_attr));
@@ -1784,8 +1274,7 @@ namespace ibv {
             using ibv_srq_init_attr::srq_context;
             using ibv_srq_init_attr::attr;
         public:
-            explicit constexpr InitAttributes(Attributes attrs = Attributes(), void *context = nullptr) :
-                    ibv_srq_init_attr{context, attrs} {}
+            explicit constexpr InitAttributes(Attributes attrs = Attributes(), void *context = nullptr);
         };
 
         static_assert(sizeof(InitAttributes) == sizeof(ibv_srq_init_attr));
@@ -1801,51 +1290,25 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_destroy_srq(reinterpret_cast<ibv_srq *>(ptr));
-                internal::checkStatusNoThrow("ibv_destroy_srq", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             /// Modify the attributes of the SharedReceiveQueue. Which attributes are specified in modifiedAttrs
-            void modify(Attributes &attr, std::initializer_list<AttributeMask> modifiedAttrs) {
-                int modifiedMask = 0;
-                for (auto mod : modifiedAttrs) {
-                    modifiedMask |= static_cast<ibv_srq_attr_mask>(mod);
-                }
-
-                const auto status = ibv_modify_srq(this, &attr, modifiedMask);
-                internal::checkStatus("ibv_modify_srq", status);
-            }
+            void modify(Attributes &attr, std::initializer_list<AttributeMask> modifiedAttrs);
 
             /// Query the current attributes of the SharedReceiveQueue and return them in res
-            void query(Attributes &res) {
-                const auto status = ibv_query_srq(this, &res);
-                internal::checkStatus("ibv_query_srq", status);
-            }
+            void query(Attributes &res);
 
             /// Query the current attributes of the SharedReceiveQueue
             [[nodiscard]]
-            Attributes query() {
-                Attributes res{};
-                query(res);
-                return res;
-            }
+            Attributes query();
 
             /// Query the associated SRQ number
             [[nodiscard]]
-            uint32_t getNumber() {
-                uint32_t num = 0;
-                const auto status = ibv_get_srq_num(this, &num);
-                internal::checkStatus("ibv_get_srq_num", status);
-                return num;
-            }
+            uint32_t getNumber();
 
             /// Post Recv workrequests to this SharedReceiveQueue, which can possibly be chained
             /// might throw and set the causing workrequest in badWr
-            void postRecv(workrequest::Recv &wr, workrequest::Recv *&badWr) {
-                const auto status = ibv_post_srq_recv(this, &wr, reinterpret_cast<ibv_recv_wr **>(&badWr));
-                internal::checkStatus("ibv_post_srq_recv", status);
-            }
+            void postRecv(workrequest::Recv &wr, workrequest::Recv *&badWr);
         };
 
         static_assert(sizeof(SharedReceiveQueue) == sizeof(ibv_srq));
@@ -1868,26 +1331,12 @@ namespace ibv {
             using ibv_xrcd_init_attr::fd;
             using ibv_xrcd_init_attr::oflags;
         public:
-            constexpr void setValidComponents(std::initializer_list<InitAttributesMask> masks) {
-                uint32_t newMask = 0;
-                for (auto mask : masks) {
-                    newMask |= static_cast<uint32_t>(mask);
-                }
-                this->comp_mask = newMask;
-            }
+            constexpr void setValidComponents(std::initializer_list<InitAttributesMask> masks);
 
             /// If fd equals -1, no inode is associated with the XRCD
-            constexpr void setFd(int fd) {
-                this->fd = fd;
-            }
+            constexpr void setFd(int fd);
 
-            constexpr void setOflags(std::initializer_list<OpenFlags> oflags) {
-                int flags = 0;
-                for (auto flag : oflags) {
-                    flags |= static_cast<int>(flag);
-                }
-                this->oflags = flags;
-            }
+            constexpr void setOflags(std::initializer_list<OpenFlags> oflags);
         };
 
         static_assert(sizeof(InitAttributes) == sizeof(ibv_xrcd_init_attr));
@@ -1897,10 +1346,7 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_close_xrcd(reinterpret_cast<ibv_xrcd *>(ptr));
-                internal::checkStatusNoThrow("ibv_close_xrcd", status);
-            }
+            static void operator delete(void *ptr) noexcept;
         };
 
         static_assert(sizeof(ExtendedConnectionDomain) == sizeof(ibv_xrcd));
@@ -1972,27 +1418,7 @@ namespace ibv {
         };
 
         [[nodiscard]]
-        inline std::string to_string(State state) {
-            switch (state) {
-                case State::RESET:
-                    return "IBV_QPS_RESET";
-                case State::INIT:
-                    return "IBV_QPS_INIT";
-                case State::RTR:
-                    return "IBV_QPS_RTR";
-                case State::RTS:
-                    return "IBV_QPS_RTS";
-                case State::SQD:
-                    return "IBV_QPS_SQD";
-                case State::SQE:
-                    return "IBV_QPS_SQE";
-                case State::ERR:
-                    return "IBV_QPS_ERR";
-                case State::UNKNOWN:
-                    return "IBV_QPS_UNKNOWN";
-            }
-            __builtin_unreachable();
-        }
+        inline std::string to_string(State state);
 
         enum class MigrationState : std::underlying_type_t<ibv_mig_state> {
             MIGRATED = IBV_MIG_MIGRATED,
@@ -2001,54 +1427,34 @@ namespace ibv {
         };
 
         [[nodiscard]]
-        inline std::string to_string(MigrationState ms) {
-            switch (ms) {
-                case MigrationState::MIGRATED:
-                    return "IBV_MIG_MIGRATED";
-                case MigrationState::REARM:
-                    return "IBV_MIG_REARM";
-                case MigrationState::ARMED:
-                    return "IBV_MIG_ARMED";
-            }
-            __builtin_unreachable();
-        }
+        inline std::string to_string(MigrationState ms);
 
-        class Capabilities : public ibv_qp_cap {
-            using ibv_qp_cap::max_send_wr;
-            using ibv_qp_cap::max_recv_wr;
-            using ibv_qp_cap::max_send_sge;
-            using ibv_qp_cap::max_recv_sge;
-            using ibv_qp_cap::max_inline_data;
+        class Capabilities : public ibv_qp_cap { // TODO
+            //using ibv_qp_cap::max_send_wr;
+            //using ibv_qp_cap::max_recv_wr;
+            //using ibv_qp_cap::max_send_sge;
+            //using ibv_qp_cap::max_recv_sge;
+            //using ibv_qp_cap::max_inline_data;
         public:
             /// Max number of outstanding workrequests in the sendqueue
             [[nodiscard]]
-            constexpr uint32_t getMaxSendWr() const {
-                return max_send_wr;
-            }
+            constexpr uint32_t getMaxSendWr() const;
 
             /// Max number of outstanding workrequests in the receivequeue
             [[nodiscard]]
-            constexpr uint32_t getMaxRecvWr() const {
-                return max_recv_wr;
-            }
+            constexpr uint32_t getMaxRecvWr() const;
 
             /// Max number of scatter/gather elements of each workrequest in the sendqueue
             [[nodiscard]]
-            constexpr uint32_t getMaxSendSge() const {
-                return max_send_sge;
-            }
+            constexpr uint32_t getMaxSendSge() const;
 
             /// Max number of scatter/gather elements of each workrequest in the receivequeue
             [[nodiscard]]
-            constexpr uint32_t getMaxRecvSge() const {
-                return max_recv_sge;
-            }
+            constexpr uint32_t getMaxRecvSge() const;
 
             /// Maximum size of workrequests which can be posted inline in the sendqueue with Flags::INLINE in bytes
             [[nodiscard]]
-            constexpr uint32_t getMaxInlineData() const {
-                return max_inline_data;
-            }
+            constexpr uint32_t getMaxInlineData() const;
         };
 
         static_assert(sizeof(Capabilities) == sizeof(ibv_qp_cap));
@@ -2060,29 +1466,15 @@ namespace ibv {
             using ibv_qp_open_attr::qp_context;
             using ibv_qp_open_attr::qp_type;
         public:
-            constexpr void setCompMask(std::initializer_list<OpenAttrMask> masks) {
-                uint32_t newMask = 0;
-                for (auto mask : masks) {
-                    newMask |= static_cast<uint32_t>(mask);
-                }
-                this->comp_mask = newMask;
-            }
+            constexpr void setCompMask(std::initializer_list<OpenAttrMask> masks);
 
-            constexpr void setQpNum(uint32_t qp_num) {
-                this->qp_num = qp_num;
-            }
+            constexpr void setQpNum(uint32_t qp_num);
 
-            void setXrcd(xrcd::ExtendedConnectionDomain &xrcd) {
-                this->xrcd = &xrcd;
-            }
+            constexpr void setXrcd(xrcd::ExtendedConnectionDomain &xrcd);
 
-            constexpr void setQpContext(void *qp_context) {
-                this->qp_context = qp_context;
-            }
+            constexpr void setQpContext(void *qp_context);
 
-            constexpr void setQpType(Type qp_type) {
-                this->qp_type = static_cast<ibv_qp_type>(qp_type);
-            }
+            constexpr void setQpType(Type qp_type);
         };
 
         static_assert(sizeof(OpenAttributes) == sizeof(ibv_qp_open_attr));
@@ -2117,272 +1509,171 @@ namespace ibv {
         public:
             /// The current QueuePair state
             [[nodiscard]]
-            constexpr State getQpState() const {
-                return static_cast<State>(qp_state);
-            }
+            constexpr State getQpState() const;
 
             /// Move the QueuePair to this state
-            constexpr void setQpState(State qp_state) {
-                this->qp_state = static_cast<ibv_qp_state>(qp_state);
-            }
+            constexpr void setQpState(State qp_state);
 
             /// Assume this is the current QueuePair state
-            constexpr void setCurQpState(State cur_qp_state) {
-                this->cur_qp_state = static_cast<ibv_qp_state>(cur_qp_state);
-            }
+            constexpr void setCurQpState(State cur_qp_state);
 
             /// The (RC/UC) path MTU
             [[nodiscard]]
-            constexpr Mtu getPathMtu() const {
-                return static_cast<Mtu>(path_mtu);
-            }
+            constexpr Mtu getPathMtu() const;
 
             /// The (RC/UC) path MTU
-            constexpr void setPathMtu(Mtu path_mtu) {
-                this->path_mtu = static_cast<ibv_mtu>(path_mtu);
-            }
+            constexpr void setPathMtu(Mtu path_mtu);
 
             /// Path migration state (valid if HCA supports APM)
             [[nodiscard]]
-            constexpr MigrationState getPathMigState() const {
-                return static_cast<MigrationState>(path_mig_state);
-            }
+            constexpr MigrationState getPathMigState() const;
 
             /// Path migration state (valid if HCA supports APM)
-            constexpr void setPathMigState(MigrationState path_mig_state) {
-                this->path_mig_state = static_cast<ibv_mig_state>(path_mig_state);
-            }
+            constexpr void setPathMigState(MigrationState path_mig_state);
 
             /// Q_Key for the QP (valid only for UD QPs)
             [[nodiscard]]
-            constexpr uint32_t getQkey() const {
-                return qkey;
-            }
+            constexpr uint32_t getQkey() const;
 
             /// Q_Key for the QP (valid only for UD QPs)
-            constexpr void setQkey(uint32_t qkey) {
-                this->qkey = qkey;
-            }
+            constexpr void setQkey(uint32_t qkey);
 
             /// PSN for receive queue (valid only for RC/UC QPs)
             [[nodiscard]]
-            constexpr uint32_t getRqPsn() const {
-                return rq_psn;
-            }
+            constexpr uint32_t getRqPsn() const;
 
             /// PSN for receive queue (valid only for RC/UC QPs)
-            constexpr void setRqPsn(uint32_t rq_psn) {
-                this->rq_psn = rq_psn;
-            }
+            constexpr void setRqPsn(uint32_t rq_psn);
 
             /// PSN for send queue (valid only for RC/UC QPs)
             [[nodiscard]]
-            constexpr uint32_t getSqPsn() const {
-                return sq_psn;
-            }
+            constexpr uint32_t getSqPsn() const;
 
             /// PSN for send queue (valid only for RC/UC QPs)
-            constexpr void setSqPsn(uint32_t sq_psn) {
-                this->sq_psn = sq_psn;
-            }
+            constexpr void setSqPsn(uint32_t sq_psn);
 
             /// Destination QP number (valid only for RC/UC QPs)
             [[nodiscard]]
-            constexpr uint32_t getDestQpNum() const {
-                return dest_qp_num;
-            }
+            constexpr uint32_t getDestQpNum() const;
 
             /// Destination QP number (valid only for RC/UC QPs)
-            constexpr void setDestQpNum(uint32_t dest_qp_num) {
-                this->dest_qp_num = dest_qp_num;
-            }
+            constexpr void setDestQpNum(uint32_t dest_qp_num);
 
             /// Test enabled remote access operations (valid only for RC/UC QPs)
             [[nodiscard]]
-            constexpr bool hasQpAccessFlags(AccessFlag flag) const {
-                const auto rawFlag = static_cast<ibv_access_flags>(flag);
-                return (qp_access_flags & rawFlag) == rawFlag;
-            }
+            constexpr bool hasQpAccessFlags(AccessFlag flag) const;
 
             /// Set enabled remote access operations (valid only for RC/UC QPs)
-            constexpr void setQpAccessFlags(std::initializer_list<AccessFlag> qp_access_flags) {
-                int raw = 0;
-                for (auto flag : qp_access_flags) {
-                    raw |= static_cast<ibv_access_flags>(flag);
-                }
-                this->qp_access_flags = raw;
-            }
+            constexpr void setQpAccessFlags(std::initializer_list<AccessFlag> qp_access_flags);
 
             /// QP capabilities (valid if HCA supports QP resizing)
             [[nodiscard]]
-            const Capabilities &getCap() const {
-                return *reinterpret_cast<const Capabilities *>(&cap);
-            }
+            constexpr const Capabilities &getCap() const;
 
             /// QP capabilities (valid if HCA supports QP resizing)
-            constexpr void setCap(const Capabilities &cap) {
-                this->cap = cap;
-            }
+            constexpr void setCap(const Capabilities &cap);
 
             /// Primary path address vector (valid only for RC/UC QPs)
             [[nodiscard]]
-            constexpr const ah::Attributes &getAhAttr() const {
-                return *static_cast<const ah::Attributes *>(&ah_attr);
-            }
+            constexpr const ah::Attributes &getAhAttr() const;
 
             /// Primary path address vector (valid only for RC/UC QPs)
-            constexpr void setAhAttr(const ah::Attributes &ah_attr) {
-                this->ah_attr = ah_attr;
-            }
+            constexpr void setAhAttr(const ah::Attributes &ah_attr);
 
             /// Alternate path address vector (valid only for RC/UC QPs)
             [[nodiscard]]
-            constexpr const ah::Attributes &getAltAhAttr() const {
-                return *static_cast<const ah::Attributes *>(&alt_ah_attr);
-            }
+            constexpr const ah::Attributes &getAltAhAttr() const;
 
             /// Alternate path address vector (valid only for RC/UC QPs)
-            constexpr void setAltAhAttr(const ah::Attributes &alt_ah_attr) {
-                this->alt_ah_attr = alt_ah_attr;
-            }
+            constexpr void setAltAhAttr(const ah::Attributes &alt_ah_attr);
 
             /// Primary P_Key index
             [[nodiscard]]
-            constexpr uint16_t getPkeyIndex() const {
-                return pkey_index;
-            }
+            constexpr uint16_t getPkeyIndex() const;
 
             /// Primary P_Key index
-            constexpr void setPkeyIndex(uint16_t pkey_index) {
-                this->pkey_index = pkey_index;
-            }
+            constexpr void setPkeyIndex(uint16_t pkey_index);
 
             /// Alternate P_Key index
             [[nodiscard]]
-            constexpr uint16_t getAltPkeyIndex() const {
-                return alt_pkey_index;
-            }
+            constexpr uint16_t getAltPkeyIndex() const;
 
             /// Alternate P_Key index
-            constexpr void setAltPkeyIndex(uint16_t alt_pkey_index) {
-                this->alt_pkey_index = alt_pkey_index;
-            }
+            constexpr void setAltPkeyIndex(uint16_t alt_pkey_index);
 
             /// Enable SQD.drained async notification (Valid only if qp_state is SQD)
             [[nodiscard]]
-            constexpr uint8_t getEnSqdAsyncNotify() const {
-                return en_sqd_async_notify;
-            }
+            constexpr uint8_t getEnSqdAsyncNotify() const;
 
             /// Enable SQD.drained async notification (Valid only if qp_state is SQD)
-            constexpr void setEnSqdAsyncNotify(uint8_t en_sqd_async_notify) {
-                this->en_sqd_async_notify = en_sqd_async_notify;
-            }
+            constexpr void setEnSqdAsyncNotify(uint8_t en_sqd_async_notify);
 
             /// Is the QP draining? Irrelevant for ibv_modify_qp()
             [[nodiscard]]
-            constexpr uint8_t getSqDraining() const {
-                return sq_draining;
-            }
+            constexpr uint8_t getSqDraining() const;
 
             /// Number of outstanding RDMA reads & atomic operations on the destination QP (valid only for RC QPs)
             [[nodiscard]]
-            constexpr uint8_t getMaxRdAtomic() const {
-                return max_rd_atomic;
-            }
+            constexpr uint8_t getMaxRdAtomic() const;
 
             /// Number of outstanding RDMA reads & atomic operations on the destination QP (valid only for RC QPs)
-            constexpr void setMaxRdAtomic(uint8_t max_rd_atomic) {
-                this->max_rd_atomic = max_rd_atomic;
-            }
+            constexpr void setMaxRdAtomic(uint8_t max_rd_atomic);
 
             /// Number of responder resources for handling incoming RDMA reads & atomic operations (valid only for RC QPs)
             [[nodiscard]]
-            constexpr uint8_t getMaxDestRdAtomic() const {
-                return max_dest_rd_atomic;
-            }
+            constexpr uint8_t getMaxDestRdAtomic() const;
 
             /// Number of responder resources for handling incoming RDMA reads & atomic operations (valid only for RC QPs)
-            constexpr void setMaxDestRdAtomic(uint8_t max_dest_rd_atomic) {
-                this->max_dest_rd_atomic = max_dest_rd_atomic;
-            }
+            constexpr void setMaxDestRdAtomic(uint8_t max_dest_rd_atomic);
 
             /// Minimum RNR NAK timer (valid only for RC QPs)
             [[nodiscard]]
-            constexpr uint8_t getMinRnrTimer() const {
-                return min_rnr_timer;
-            }
+            constexpr uint8_t getMinRnrTimer() const;
 
             /// Minimum RNR NAK timer (valid only for RC QPs)
-            constexpr void setMinRnrTimer(uint8_t min_rnr_timer) {
-                this->min_rnr_timer = min_rnr_timer;
-            }
+            constexpr void setMinRnrTimer(uint8_t min_rnr_timer);
 
             /// Primary port number
             [[nodiscard]]
-            constexpr uint8_t getPortNum() const {
-                return port_num;
-            }
+            constexpr uint8_t getPortNum() const;
 
             /// Primary port number
-            constexpr void setPortNum(uint8_t port_num) {
-                this->port_num = port_num;
-            }
+            constexpr void setPortNum(uint8_t port_num);
 
             /// Local ack timeout for primary path (valid only for RC QPs)
             [[nodiscard]]
-            constexpr uint8_t getTimeout() const {
-                return timeout;
-            }
+            constexpr uint8_t getTimeout() const;
 
             /// Local ack timeout for primary path (valid only for RC QPs)
-            constexpr void setTimeout(uint8_t timeout) {
-                this->timeout = timeout;
-            }
+            constexpr void setTimeout(uint8_t timeout);
 
             /// Retry count (valid only for RC QPs)
             [[nodiscard]]
-            constexpr uint8_t getRetryCnt() const {
-                return retry_cnt;
-            }
+            constexpr uint8_t getRetryCnt() const;
 
             /// Retry count (valid only for RC QPs)
-            constexpr void setRetryCnt(uint8_t retry_cnt) {
-                this->retry_cnt = retry_cnt;
-            }
+            constexpr void setRetryCnt(uint8_t retry_cnt);
 
             /// RNR retry (valid only for RC QPs)
             [[nodiscard]]
-            constexpr uint8_t getRnrRetry() const {
-                return rnr_retry;
-            }
+            constexpr uint8_t getRnrRetry() const;
 
             /// RNR retry (valid only for RC QPs)
-            constexpr void setRnrRetry(uint8_t rnr_retry) {
-                this->rnr_retry = rnr_retry;
-            }
+            constexpr void setRnrRetry(uint8_t rnr_retry);
 
             /// Alternate port number
             [[nodiscard]]
-            constexpr uint8_t getAltPortNum() const {
-                return alt_port_num;
-            }
+            constexpr uint8_t getAltPortNum() const;
 
             /// Alternate port number
-            constexpr void setAltPortNum(uint8_t alt_port_num) {
-                this->alt_port_num = alt_port_num;
-            }
+            constexpr void setAltPortNum(uint8_t alt_port_num);
 
             /// Local ack timeout for alternate path (valid only for RC QPs)
             [[nodiscard]]
-            constexpr uint8_t getAltTimeout() const {
-                return alt_timeout;
-            }
+            constexpr uint8_t getAltTimeout() const;
 
             /// Local ack timeout for alternate path (valid only for RC QPs)
-            constexpr void setAltTimeout(uint8_t alt_timeout) {
-                this->alt_timeout = alt_timeout;
-            }
+            constexpr void setAltTimeout(uint8_t alt_timeout);
 
             /* Only available in newer versions of verbs.h
             /// Rate limit in kbps for packet pacing
@@ -2408,33 +1699,19 @@ namespace ibv {
             using ibv_qp_init_attr::qp_type;
             using ibv_qp_init_attr::sq_sig_all;
         public:
-            constexpr void setContext(void *context) {
-                qp_context = context;
-            }
+            constexpr void setContext(void *context);
 
-            void setSendCompletionQueue(completions::CompletionQueue &cq) {
-                send_cq = &cq;
-            }
+            constexpr void setSendCompletionQueue(completions::CompletionQueue &cq);
 
-            void setRecvCompletionQueue(completions::CompletionQueue &cq) {
-                recv_cq = &cq;
-            }
+            constexpr void setRecvCompletionQueue(completions::CompletionQueue &cq);
 
-            void setSharedReceiveQueue(srq::SharedReceiveQueue &sharedReceiveQueue) {
-                srq = &sharedReceiveQueue;
-            }
+            constexpr void setSharedReceiveQueue(srq::SharedReceiveQueue &sharedReceiveQueue);
 
-            constexpr void setCapabilities(const Capabilities &caps) {
-                cap = caps;
-            }
+            constexpr void setCapabilities(const Capabilities &caps);
 
-            constexpr void setType(Type type) {
-                qp_type = static_cast<ibv_qp_type>(type);
-            }
+            constexpr void setType(Type type);
 
-            constexpr void setSignalAll(bool shouldSignal) {
-                sq_sig_all = static_cast<int>(shouldSignal);
-            }
+            constexpr void setSignalAll(bool shouldSignal);
         };
 
         static_assert(sizeof(InitAttributes) == sizeof(ibv_qp_init_attr));
@@ -2456,15 +1733,10 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_destroy_qp(reinterpret_cast<ibv_qp *>(ptr));
-                internal::checkStatusNoThrow("ibv_destroy_qp", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             [[nodiscard]]
-            constexpr uint32_t getNum() const {
-                return qp_num;
-            }
+            constexpr uint32_t getNum() const;
 
             /// Modify the attributes of the QueuePair, according to modifiedAttributes
             /// To get the QueuePair operational, transition the state from: Reset --> Init --> RTR --> RTS.
@@ -2485,94 +1757,44 @@ namespace ibv {
             /// To Init: STATE, PORT
             /// To RTR: STATE
             /// To RTS: STATE
-            void modify(Attributes &attr, std::initializer_list<AttrMask> modifiedAttributes) {
-                int mask = 0;
-                for (auto mod : modifiedAttributes) {
-                    mask |= static_cast<ibv_qp_attr_mask>(mod);
-                }
-                const auto status = ibv_modify_qp(this, &attr, mask);
-                internal::checkStatus("ibv_modify_qp", status);
-            }
+            void modify(Attributes &attr, std::initializer_list<AttrMask> modifiedAttributes);
 
             /// Get the Attributes of a QueuePair
             void query(Attributes &attr, std::initializer_list<AttrMask> queriedAttributes,
-                       InitAttributes &init_attr, std::initializer_list<InitAttrMask> queriedInitAttributes) {
-                int mask = 0;
-                for (auto query : queriedAttributes) {
-                    mask |= static_cast<ibv_qp_attr_mask>(query);
-                }
-                for (auto query : queriedInitAttributes) {
-                    mask |= static_cast<ibv_qp_init_attr_mask>(query);
-                }
-                const auto status = ibv_query_qp(this, &attr, mask, &init_attr);
-                internal::checkStatus("ibv_query_qp", status);
-            }
+                       InitAttributes &init_attr, std::initializer_list<InitAttrMask> queriedInitAttributes);
 
             /// Get the Attributes of a QueuePair
             [[nodiscard]]
             std::tuple<Attributes, InitAttributes> query(std::initializer_list<AttrMask> queriedAttributes,
-                                                         std::initializer_list<InitAttrMask> queriedInitAttributes) {
-                Attributes attributes;
-                InitAttributes initAttributes;
-                query(attributes, queriedAttributes, initAttributes, queriedInitAttributes);
-                return {attributes, initAttributes};
-            }
+                                                         std::initializer_list<InitAttrMask> queriedInitAttributes);
 
             /// Get only the Attributes of a QueuePair
             [[nodiscard]]
-            Attributes query(std::initializer_list<AttrMask> queriedAttributes) {
-                auto[attributes, initAttributes] = query(queriedAttributes, {});
-                std::ignore = initAttributes;
-                return attributes;
-            }
+            Attributes query(std::initializer_list<AttrMask> queriedAttributes);
 
             /// Get only the InitAttributes of a QueuePair
             [[nodiscard]]
-            InitAttributes query(std::initializer_list<InitAttrMask> queriedInitAttributes) {
-                auto[attributes, initAttributes] = query({}, queriedInitAttributes);
-                std::ignore = attributes;
-                return initAttributes;
-            }
+            InitAttributes query(std::initializer_list<InitAttrMask> queriedInitAttributes);
 
             // TODO: custom exception instead of bad_wr
             /// Post a (possibly chained) workrequest to the send queue
-            void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr) {
-                const auto status = ibv_post_send(this, &wr, reinterpret_cast<ibv_send_wr **>(&bad_wr));
-                internal::checkStatus("ibv_post_send", status);
-            }
+            void postSend(workrequest::SendWr &wr, workrequest::SendWr *&bad_wr);
 
             /// Post a (possibly chained) workrequest to the receive queue
-            void postRecv(workrequest::Recv &wr, workrequest::Recv *&bad_wr) {
-                const auto status = ibv_post_recv(this, &wr, reinterpret_cast<ibv_recv_wr **>(&bad_wr));
-                internal::checkStatus("ibv_post_recv", status);
-            }
+            void postRecv(workrequest::Recv &wr, workrequest::Recv *&bad_wr);
 
             [[nodiscard]]
-            std::unique_ptr<flow::Flow> createFlow(flow::Attributes &attr) {
-                auto res = ibv_create_flow(this, &attr);
-                internal::checkPtr("ibv_create_flow", res);
-                return std::unique_ptr<flow::Flow>(reinterpret_cast<flow::Flow *>(res));
-            }
+            std::unique_ptr<flow::Flow> createFlow(flow::Attributes &attr);
 
             /// Post a request to bind a type 1 memory window to a memory region
             /// The QP Transport Service Type must be either UC, RC or XRC_SEND for bind operations
             /// @return the new rkey
             [[nodiscard]]
-            uint32_t bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info) {
-                const auto status = ibv_bind_mw(this, &mw, &info);
-                internal::checkStatus("ibv_bind_mw", status);
-                return mw.getRkey();
-            }
+            uint32_t bindMemoryWindow(memorywindow::MemoryWindow &mw, memorywindow::Bind &info);
 
-            void attachToMcastGroup(const Gid &gid, uint16_t lid) {
-                const auto status = ibv_attach_mcast(this, &gid.underlying, lid);
-                internal::checkStatus("ibv_attach_mcast", status);
-            }
+            void attachToMcastGroup(const Gid &gid, uint16_t lid);
 
-            void detachFromMcastGroup(const Gid &gid, uint16_t lid) {
-                const auto status = ibv_detach_mcast(this, &gid.underlying, lid);
-                internal::checkStatus("ibv_detach_mcast", status);
-            }
+            void detachFromMcastGroup(const Gid &gid, uint16_t lid);
         };
 
         static_assert(sizeof(QueuePair) == sizeof(ibv_qp));
@@ -2614,74 +1836,27 @@ namespace ibv {
             using ibv_async_event::event_type;
         public:
             [[nodiscard]]
-            constexpr Type getType() const {
-                return static_cast<Type>(event_type);
-            }
+            constexpr Type getType() const;
 
             [[nodiscard]]
-            constexpr Cause getCause() const {
-                switch (getType()) {
-                    case Type::QP_FATAL:
-                    case Type::QP_REQ_ERR:
-                    case Type::QP_ACCESS_ERR:
-                    case Type::COMM_EST:
-                    case Type::SQ_DRAINED:
-                    case Type::PATH_MIG:
-                    case Type::PATH_MIG_ERR:
-                    case Type::QP_LAST_WQE_REACHED:
-                        return Cause::QueuePair;
-                    case Type::CQ_ERR:
-                        return Cause::CompletionQueue;
-                    case Type::SRQ_ERR:
-                    case Type::SRQ_LIMIT_REACHED:
-                        return Cause::SharedReceiveQueue;
-                    case Type::PORT_ACTIVE:
-                    case Type::PORT_ERR:
-                    case Type::LID_CHANGE:
-                    case Type::PKEY_CHANGE:
-                    case Type::SM_CHANGE:
-                    case Type::CLIENT_REREGISTER:
-                    case Type::GID_CHANGE:
-                        return Cause::Port;
-                    case Type::DEVICE_FATAL:
-                        return Cause::Device;
-                }
-            }
+            constexpr Cause getCause() const;
 
             [[nodiscard]]
-            queuepair::QueuePair *getCausingQp() const {
-                checkCause(Cause::QueuePair);
-                return reinterpret_cast<queuepair::QueuePair *>(element.qp);
-            }
+            queuepair::QueuePair *getCausingQp() const;
 
             [[nodiscard]]
-            completions::CompletionQueue *getCausingCq() const {
-                checkCause(Cause::CompletionQueue);
-                return reinterpret_cast<completions::CompletionQueue *>(element.cq);
-            }
+            completions::CompletionQueue *getCausingCq() const;
 
             [[nodiscard]]
-            srq::SharedReceiveQueue *getCausingSrq() const {
-                checkCause(Cause::SharedReceiveQueue);
-                return reinterpret_cast<srq::SharedReceiveQueue *>(element.srq);
-            }
+            srq::SharedReceiveQueue *getCausingSrq() const;
 
             [[nodiscard]]
-            constexpr int getCausingPort() const {
-                checkCause(Cause::Port);
-                return element.port_num;
-            }
+            constexpr int getCausingPort() const;
 
-            void ack() {
-                ibv_ack_async_event(this);
-            }
+            void ack();
 
         private:
-            constexpr void checkCause(Cause cause) const {
-                if (getCause() != cause) {
-                    throw std::logic_error("Invalid event cause accessed");
-                }
-            }
+            constexpr void checkCause(Cause cause) const;
         };
 
         static_assert(sizeof(AsyncEvent) == sizeof(ibv_async_event));
@@ -2694,78 +1869,37 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_dealloc_pd(reinterpret_cast<ibv_pd *>(ptr));
-                internal::checkStatusNoThrow("ibv_dealloc_pd", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             [[nodiscard]]
-            context::Context *getContext() const {
-                return reinterpret_cast<context::Context *>(context);
-            }
+            context::Context *getContext() const;
 
             [[nodiscard]]
-            constexpr uint32_t getHandle() const {
-                return handle;
-            }
+            constexpr uint32_t getHandle() const;
 
             [[nodiscard]]
             std::unique_ptr<memoryregion::MemoryRegion>
-            registerMemoryRegion(void *addr, size_t length, std::initializer_list<AccessFlag> flags) {
-                using MR = memoryregion::MemoryRegion;
-                int access = 0;
-                for (auto flag : flags) {
-                    access |= static_cast<ibv_access_flags>(flag);
-                }
-                const auto mr = ibv_reg_mr(this, addr, length, access);
-                internal::checkPtr("ibv_reg_mr", mr);
-                return std::unique_ptr<MR>(reinterpret_cast<MR *>(mr));
-            }
+            registerMemoryRegion(void *addr, size_t length, std::initializer_list<AccessFlag> flags);
 
             [[nodiscard]]
             std::unique_ptr<memorywindow::MemoryWindow>
-            allocMemoryWindow(memorywindow::Type type) {
-                using MW = memorywindow::MemoryWindow;
-                const auto mw = ibv_alloc_mw(this, static_cast<ibv_mw_type>(type));
-                internal::checkPtr("ibv_alloc_mw", mw);
-                return std::unique_ptr<MW>(reinterpret_cast<MW *>(mw));
-            }
+            allocMemoryWindow(memorywindow::Type type);
 
             [[nodiscard]]
-            std::unique_ptr<srq::SharedReceiveQueue> createSrq(srq::InitAttributes &initAttributes) {
-                using SRQ = srq::SharedReceiveQueue;
-                const auto srq = ibv_create_srq(this, &initAttributes);
-                internal::checkPtr("ibv_create_srq", srq);
-                return std::unique_ptr<SRQ>(reinterpret_cast<SRQ *>(srq));
-            }
+            std::unique_ptr<srq::SharedReceiveQueue> createSrq(srq::InitAttributes &initAttributes);
 
             [[nodiscard]]
-            std::unique_ptr<queuepair::QueuePair> createQueuePair(queuepair::InitAttributes &initAttributes) {
-                using QP = queuepair::QueuePair;
-                const auto qp = ibv_create_qp(this, &initAttributes);
-                internal::checkPtr("ibv_create_qp", qp);
-                return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
-            }
+            std::unique_ptr<queuepair::QueuePair> createQueuePair(queuepair::InitAttributes &initAttributes);
 
             /// Create an AddressHandle associated with the ProtectionDomain
             [[nodiscard]]
-            std::unique_ptr<ah::AddressHandle> createAddressHandle(ah::Attributes attributes) {
-                using AH = ah::AddressHandle;
-                const auto ah = ibv_create_ah(this, &attributes);
-                internal::checkPtr("ibv_create_ah", ah);
-                return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
-            }
+            std::unique_ptr<ah::AddressHandle> createAddressHandle(ah::Attributes attributes);
 
             /// Create an AddressHandle from a work completion
             [[nodiscard]]
             std::unique_ptr<ah::AddressHandle>
             createAddressHandleFromWorkCompletion(workcompletion::WorkCompletion &wc, GlobalRoutingHeader *grh,
-                                                  uint8_t port_num) {
-                using AH = ah::AddressHandle;
-                const auto ah = ibv_create_ah_from_wc(this, &wc, grh, port_num);
-                internal::checkPtr("ibv_create_ah_from_wc", ah);
-                return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
-            }
+                                                  uint8_t port_num);
         };
 
         static_assert(sizeof(ProtectionDomain) == sizeof(ibv_pd));
@@ -2783,89 +1917,44 @@ namespace ibv {
         public:
             static void *operator new(std::size_t) noexcept = delete;
 
-            static void operator delete(void *ptr) noexcept {
-                const auto status = ibv_close_device(reinterpret_cast<ibv_context *>(ptr));
-                internal::checkStatusNoThrow("ibv_close_device", status);
-            }
+            static void operator delete(void *ptr) noexcept;
 
             [[nodiscard]]
-            device::Device *getDevice() const {
-                return reinterpret_cast<device::Device *>(device);
-            }
+            device::Device *getDevice() const;
 
             /// Query a device for its attributes
             [[nodiscard]]
-            device::Attributes queryAttributes() {
-                device::Attributes res;
-                const auto status = ibv_query_device(this, &res);
-                internal::checkStatus("ibv_query_device", status);
-                return res;
-            }
+            device::Attributes queryAttributes();
 
             /// query port Attributes of port port
             [[nodiscard]]
-            port::Attributes queryPort(uint8_t port) {
-                port::Attributes res;
-                const auto status = ibv_query_port(this, port, &res);
-                internal::checkStatus("ibv_query_port", status);
-                return res;
-            }
+            port::Attributes queryPort(uint8_t port);
 
             /// Wait for the next async event of the device
             /// This event must be acknowledged using `event.ack()`
             [[nodiscard]]
-            event::AsyncEvent getAsyncEvent() {
-                event::AsyncEvent res{};
-                const auto status = ibv_get_async_event(this, &res);
-                internal::checkStatus("ibv_get_async_event", status);
-                return res;
-            }
+            event::AsyncEvent getAsyncEvent();
 
             /// Query the Infiniband port's GID table in entry index
             [[nodiscard]]
-            Gid queryGid(uint8_t port_num, int index) {
-                Gid res{};
-                const auto status = ibv_query_gid(this, port_num, index, &res.underlying);
-                internal::checkStatus("ibv_query_gid", status);
-                return res;
-            }
+            Gid queryGid(uint8_t port_num, int index);
 
             /// Query the Infiniband port's P_Key table in entry index
             [[nodiscard]]
-            uint16_t queryPkey(uint8_t port_num, int index) {
-                uint16_t res{};
-                const auto status = ibv_query_pkey(this, port_num, index, &res);
-                internal::checkStatus("ibv_query_pkey", status);
-                return res;
-            }
+            uint16_t queryPkey(uint8_t port_num, int index);
 
             /// Allocate a ProtectionDomain for the device
             [[nodiscard]]
-            std::unique_ptr<protectiondomain::ProtectionDomain> allocProtectionDomain() {
-                using PD = protectiondomain::ProtectionDomain;
-                const auto pd = ibv_alloc_pd(this);
-                internal::checkPtr("ibv_alloc_pd", pd);
-                return std::unique_ptr<PD>(reinterpret_cast<PD *>(pd));
-            }
+            std::unique_ptr<protectiondomain::ProtectionDomain> allocProtectionDomain();
 
             /// open an XRC protection domain
             [[nodiscard]]
             std::unique_ptr<xrcd::ExtendedConnectionDomain>
-            openExtendedConnectionDomain(xrcd::InitAttributes &attr) {
-                using XRCD = xrcd::ExtendedConnectionDomain;
-                const auto xrcd = ibv_open_xrcd(this, &attr);
-                internal::checkPtr("ibv_open_xrcd", xrcd);
-                return std::unique_ptr<XRCD>(reinterpret_cast<XRCD *>(xrcd));
-            }
+            openExtendedConnectionDomain(xrcd::InitAttributes &attr);
 
             /// Create a completion event channel for the device
             [[nodiscard]]
-            std::unique_ptr<completions::CompletionEventChannel> createCompletionEventChannel() {
-                using CEC = completions::CompletionEventChannel;
-                const auto compChannel = ibv_create_comp_channel(this);
-                internal::checkPtr("ibv_create_comp_channel", compChannel);
-                return std::unique_ptr<CEC>(reinterpret_cast<CEC *>(compChannel));
-            }
+            std::unique_ptr<completions::CompletionEventChannel> createCompletionEventChannel();
 
             /// Create a CompletionQueue with at last cqe entries for the RDMA device
             /// @cqe - Minimum number of entries required for CQ
@@ -2877,21 +1966,11 @@ namespace ibv {
             [[nodiscard]]
             std::unique_ptr<completions::CompletionQueue>
             createCompletionQueue(int cqe, void *context, completions::CompletionEventChannel &cec,
-                                  int completionVector) {
-                using CQ = completions::CompletionQueue;
-                const auto cq = ibv_create_cq(this, cqe, context, &cec, completionVector);
-                internal::checkPtr("ibv_create_cq", cq);
-                return std::unique_ptr<CQ>(reinterpret_cast<CQ *>(cq));
-            }
+                                  int completionVector);
 
             /// Open a shareable QueuePair
             [[nodiscard]]
-            std::unique_ptr<queuepair::QueuePair> openSharableQueuePair(queuepair::OpenAttributes &openAttributes) {
-                using QP = queuepair::QueuePair;
-                const auto qp = ibv_open_qp(this, &openAttributes);
-                internal::checkPtr("ibv_open_qp", qp);
-                return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
-            }
+            std::unique_ptr<queuepair::QueuePair> openSharableQueuePair(queuepair::OpenAttributes &openAttributes);
 
             /// Initialize AddressHandle Attributes from a WorkCompletion wc
             /// @port_num: Port on which the received message arrived.
@@ -2901,34 +1980,1648 @@ namespace ibv {
             /// @ah_attr: Returned attributes that can be used when creating an address handle for replying to the
             /// message.
             void initAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
-                                                    GlobalRoutingHeader *grh, ah::Attributes &attributes) {
-                const auto status = ibv_init_ah_from_wc(this, port_num, &wc, grh, &attributes);
-                internal::checkStatus("ibv_init_ah_from_wc", status);
-            }
+                                                    GlobalRoutingHeader *grh, ah::Attributes &attributes);
 
             /// Create new AddressHandle Attributes from a WorkCompletion
             [[nodiscard]]
             ah::Attributes getAhAttributesFromWorkCompletion(uint8_t port_num, workcompletion::WorkCompletion &wc,
-                                                             GlobalRoutingHeader *grh = nullptr) {
-                ah::Attributes attributes;
-                initAhAttributesFromWorkCompletion(port_num, wc, grh, attributes);
-                return attributes;
-            }
+                                                             GlobalRoutingHeader *grh = nullptr);
         };
     } // namespace context
 
     /// Increase the 8 lsb in the given rkey
     [[nodiscard]]
-    inline uint32_t incRkey(uint32_t rkey) {
-        return ibv_inc_rkey(rkey);
-    }
+    inline uint32_t incRkey(uint32_t rkey);
 
     /// Prepare data structures so that fork() may be used safely. If this function is not called or returns a non-zero
     /// status, then libibverbs data structures are not fork()-safe and the effect of an application calling fork()
     /// is undefined.
-    inline void forkInit() {
-        const auto status = ibv_fork_init();
-        internal::checkStatus("ibv_fork_init", status);
-    }
+    inline void forkInit();
 } // namespace ibv
+
+/**********************************************************************************************************************/
+
+std::runtime_error ibv::internal::exception(const char *function, int errnum) {
+    return std::runtime_error(
+            std::string(function) + " failed with error " + std::to_string(errnum) + ": " + strerror(errnum));
+}
+
+constexpr void ibv::internal::check(const char *function, bool ok) {
+    if (not ok) {
+        throw exception(function, errno);
+    }
+}
+
+constexpr void ibv::internal::checkStatus(const char *function, int status) {
+    if (status != 0) {
+        throw exception(function, status);
+    }
+}
+
+constexpr void ibv::internal::checkPtr(const char *function, const void *ptr) {
+    if (ptr == nullptr) {
+        throw exception(function, errno);
+    }
+}
+
+constexpr void ibv::internal::checkStatusNoThrow(const char *function, int status) noexcept {
+    if (status != 0) {
+        std::clog << function << " failed with error " << std::to_string(status) << ": " << strerror(status);
+    }
+}
+
+constexpr uint64_t ibv::Gid::getSubnetPrefix() const {
+    return underlying.global.subnet_prefix;
+}
+
+constexpr uint64_t ibv::Gid::getInterfaceId() const {
+    return underlying.global.interface_id;
+}
+
+constexpr uint16_t ibv::GlobalRoutingHeader::getPaylen() const {
+    return paylen;
+}
+
+constexpr uint32_t ibv::GlobalRoutingHeader::getVersionTclassFlow() const {
+    return version_tclass_flow;
+}
+
+constexpr uint8_t ibv::GlobalRoutingHeader::getNextHdr() const {
+    return next_hdr;
+}
+
+constexpr uint8_t ibv::GlobalRoutingHeader::getHopLimit() const {
+    return hop_limit;
+}
+
+inline const ibv::Gid &ibv::GlobalRoutingHeader::getSgid() const {
+    return *reinterpret_cast<const Gid *>(&sgid);
+}
+
+inline const ibv::Gid &ibv::GlobalRoutingHeader::getDgid() const {
+    return *reinterpret_cast<const Gid *>(&dgid);
+}
+
+inline const ibv::Gid &ibv::GlobalRoute::getDgid() const {
+    return *reinterpret_cast<const Gid *>(&dgid);
+}
+
+inline uint32_t ibv::GlobalRoute::getFlowLabel() const {
+    return flow_label;
+}
+
+inline uint8_t ibv::GlobalRoute::getSgidIndex() const {
+    return sgid_index;
+}
+
+inline uint8_t ibv::GlobalRoute::getHopLimit() const {
+    return hop_limit;
+}
+
+inline uint8_t ibv::GlobalRoute::getTrafficClass() const {
+    return traffic_class;
+}
+
+constexpr ibv::flow::SpecType ibv::flow::Spec::getType() const {
+    return static_cast<SpecType>(hdr.type);
+}
+
+constexpr uint16_t ibv::flow::Spec::getSize() const {
+    return hdr.size;
+}
+
+inline void ibv::flow::Flow::operator delete(void *ptr) noexcept {
+    const auto status = ibv_destroy_flow(reinterpret_cast<ibv_flow *>(ptr));
+    internal::checkStatusNoThrow("ibv_destroy_flow", status);
+}
+
+constexpr uint64_t ibv::workcompletion::WorkCompletion::getId() const {
+    return wr_id;
+}
+
+constexpr ibv::workcompletion::Status ibv::workcompletion::WorkCompletion::getStatus() const {
+    return static_cast<Status>(status);
+}
+
+constexpr bool ibv::workcompletion::WorkCompletion::isSuccessful() const {
+    return getStatus() == Status::SUCCESS;
+}
+
+constexpr ibv::workcompletion::WorkCompletion::operator bool() const {
+    return isSuccessful();
+}
+
+constexpr ibv::workcompletion::Opcode ibv::workcompletion::WorkCompletion::getOpcode() const {
+    return static_cast<Opcode>(opcode);
+}
+
+constexpr bool ibv::workcompletion::WorkCompletion::hasImmData() const {
+    return testFlag(Flag::WITH_IMM);
+}
+
+constexpr bool ibv::workcompletion::WorkCompletion::hasInvRkey() const {
+    return testFlag(Flag::WITH_INV);
+}
+
+constexpr uint32_t ibv::workcompletion::WorkCompletion::getImmData() const {
+    checkCondition(hasImmData());
+    return imm_data;
+}
+
+constexpr uint32_t ibv::workcompletion::WorkCompletion::getInvRkey() const {
+    checkCondition(hasInvRkey());
+    return imm_data;
+}
+
+constexpr uint32_t ibv::workcompletion::WorkCompletion::getQueuePairNumber() const {
+    return qp_num;
+}
+
+constexpr uint32_t ibv::workcompletion::WorkCompletion::getSourceQueuePair() const {
+    return src_qp;
+}
+
+constexpr bool ibv::workcompletion::WorkCompletion::testFlag(ibv::workcompletion::Flag flag) const {
+    const auto rawFlag = static_cast<ibv_wc_flags>(flag);
+    return (wc_flags & rawFlag) == rawFlag;
+}
+
+constexpr uint16_t ibv::workcompletion::WorkCompletion::getPkeyIndex() const {
+    return pkey_index;
+}
+
+constexpr uint16_t ibv::workcompletion::WorkCompletion::getSlid() const {
+    return slid;
+}
+
+constexpr uint8_t ibv::workcompletion::WorkCompletion::getSl() const {
+    return sl;
+}
+
+constexpr uint8_t ibv::workcompletion::WorkCompletion::getDlidPathBits() const {
+    return dlid_path_bits;
+}
+
+constexpr void ibv::workcompletion::WorkCompletion::checkCondition(bool condition) {
+    if (not condition) {
+        throw std::logic_error("Invalid workcompletion data access");
+    }
+}
+
+std::string ibv::workcompletion::to_string(ibv::workcompletion::Opcode opcode) {
+    switch (opcode) {
+        case Opcode::SEND:
+            return "IBV_WC_SEND";
+        case Opcode::RDMA_WRITE:
+            return "IBV_WC_RDMA_WRITE";
+        case Opcode::RDMA_READ:
+            return "IBV_WC_RDMA_READ";
+        case Opcode::COMP_SWAP:
+            return "IBV_WC_COMP_SWAP";
+        case Opcode::FETCH_ADD:
+            return "IBV_WC_FETCH_ADD";
+        case Opcode::BIND_MW:
+            return "IBV_WC_BIND_MW";
+        case Opcode::LOCAL_INV:
+            return "IBV_WC_LOCAL_INV";
+        case Opcode::RECV:
+            return "IBV_WC_RECV";
+        case Opcode::RECV_RDMA_WITH_IMM:
+            return "IBV_WC_RECV_RDMA_WITH_IMM";
+    }
+    __builtin_unreachable();
+}
+
+std::string ibv::workcompletion::to_string(ibv::workcompletion::Status status) {
+    return ibv_wc_status_str(static_cast<ibv_wc_status>(status));
+}
+
+inline const ibv::GlobalRoute &ibv::ah::Attributes::getGrh() const {
+    return *reinterpret_cast<const GlobalRoute *>(&grh);
+}
+
+constexpr void ibv::ah::Attributes::setGrh(const ibv::GlobalRoute &grh) {
+    this->grh = grh;
+}
+
+constexpr uint16_t ibv::ah::Attributes::getDlid() const {
+    return dlid;
+}
+
+constexpr void ibv::ah::Attributes::setDlid(uint16_t dlid) {
+    this->dlid = dlid;
+}
+
+constexpr uint8_t ibv::ah::Attributes::getSl() const {
+    return sl;
+}
+
+constexpr void ibv::ah::Attributes::setSl(uint8_t sl) {
+    this->sl = sl;
+}
+
+constexpr uint8_t ibv::ah::Attributes::getSrcPathBits() const {
+    return src_path_bits;
+}
+
+constexpr void ibv::ah::Attributes::setSrcPathBits(uint8_t src_path_bits) {
+    this->src_path_bits = src_path_bits;
+}
+
+constexpr uint8_t ibv::ah::Attributes::getStaticRate() const {
+    return static_rate;
+}
+
+constexpr void ibv::ah::Attributes::setStaticRate(uint8_t static_rate) {
+    this->static_rate = static_rate;
+}
+
+constexpr bool ibv::ah::Attributes::getIsGlobal() const {
+    return static_cast<bool>(is_global);
+}
+
+constexpr void ibv::ah::Attributes::setIsGlobal(bool is_global) {
+    this->is_global = static_cast<uint8_t>(is_global);
+}
+
+constexpr uint8_t ibv::ah::Attributes::getPortNum() const {
+    return port_num;
+}
+
+constexpr void ibv::ah::Attributes::setPortNum(uint8_t port_num) {
+    this->port_num = port_num;
+}
+
+inline void ibv::ah::AddressHandle::operator delete(void *ptr) noexcept {
+    const auto status = ibv_destroy_ah(reinterpret_cast<ibv_ah *>(ptr));
+    internal::checkStatusNoThrow("ibv_destroy_ah", status);
+}
+
+inline void ibv::completions::CompletionQueue::operator delete(void *ptr) noexcept {
+    const auto status = ibv_destroy_cq(reinterpret_cast<ibv_cq *>(ptr));
+    internal::checkStatusNoThrow("ibv_destroy_cq", status);
+}
+
+inline void ibv::completions::CompletionQueue::resize(int newCqe) {
+    const auto status = ibv_resize_cq(this, newCqe);
+    internal::checkStatus("ibv_resize_cq", status);
+}
+
+inline void ibv::completions::CompletionQueue::ackEvents(unsigned int nEvents) {
+    ibv_ack_cq_events(this, nEvents);
+}
+
+inline int ibv::completions::CompletionQueue::poll(int numEntries, ibv::workcompletion::WorkCompletion *resultArray) {
+    const auto res = ibv_poll_cq(this, numEntries, resultArray);
+    internal::check("ibv_poll_cq", res >= 0);
+    return res;
+}
+
+inline void ibv::completions::CompletionQueue::requestNotify(bool solicitedOnly) {
+    const auto status = ibv_req_notify_cq(this, static_cast<int>(solicitedOnly));
+    internal::checkStatus("ibv_req_notify_cq", status);
+}
+
+inline void ibv::completions::CompletionEventChannel::operator delete(void *ptr) noexcept {
+    const auto status = ibv_destroy_comp_channel(reinterpret_cast<ibv_comp_channel *>(ptr));
+    internal::checkStatusNoThrow("ibv_destroy_comp_channel", status);
+}
+
+inline std::tuple<ibv::completions::CompletionQueue *, void *> ibv::completions::CompletionEventChannel::getEvent() {
+    CompletionQueue *cqRet;
+    void *contextRet;
+    const auto status = ibv_get_cq_event(this, reinterpret_cast<ibv_cq **>(&cqRet), &contextRet);
+    internal::checkStatus("ibv_get_cq_event", status);
+    return {cqRet, contextRet};
+}
+
+std::string ibv::to_string(ibv::Mtu mtu) {
+    switch (mtu) {
+        case Mtu::_256:
+            return "IBV_MTU_256";
+        case Mtu::_512:
+            return "IBV_MTU_512";
+        case Mtu::_1024:
+            return "IBV_MTU_1024";
+        case Mtu::_2048:
+            return "IBV_MTU_2048";
+        case Mtu::_4096:
+            return "IBV_MTU_4096";
+    }
+    __builtin_unreachable();
+}
+
+uint32_t ibv::incRkey(uint32_t rkey) {
+    return ibv_inc_rkey(rkey);
+}
+
+void ibv::forkInit() {
+    const auto status = ibv_fork_init();
+    internal::checkStatus("ibv_fork_init", status);
+}
+
+constexpr ibv::port::State ibv::port::Attributes::getState() const {
+    return static_cast<State>(state);
+}
+
+constexpr ibv::Mtu ibv::port::Attributes::getMaxMtu() const {
+    return static_cast<Mtu>(max_mtu);
+}
+
+constexpr ibv::Mtu ibv::port::Attributes::getActiveMtu() const {
+    return static_cast<Mtu>(active_mtu);
+}
+
+constexpr int ibv::port::Attributes::getGidTblLen() const {
+    return gid_tbl_len;
+}
+
+constexpr bool ibv::port::Attributes::hasCapability(ibv::port::CapabilityFlag flag) {
+    const auto rawFlag = static_cast<ibv_port_cap_flags>(flag);
+    return (port_cap_flags & rawFlag) == rawFlag;
+}
+
+constexpr uint32_t ibv::port::Attributes::getMaxMsgSize() const {
+    return max_msg_sz;
+}
+
+constexpr uint32_t ibv::port::Attributes::getBadPkeyCntr() const {
+    return bad_pkey_cntr;
+}
+
+constexpr uint32_t ibv::port::Attributes::getQkeyViolCntr() const {
+    return qkey_viol_cntr;
+}
+
+constexpr uint16_t ibv::port::Attributes::getPkeyTblLen() const {
+    return pkey_tbl_len;
+}
+
+constexpr uint16_t ibv::port::Attributes::getLid() const {
+    return lid;
+}
+
+constexpr uint16_t ibv::port::Attributes::getSmLid() const {
+    return sm_lid;
+}
+
+constexpr uint8_t ibv::port::Attributes::getLmc() const {
+    return lmc;
+}
+
+constexpr uint8_t ibv::port::Attributes::getMaxVlNum() const {
+    return max_vl_num;
+}
+
+constexpr uint8_t ibv::port::Attributes::getSmSl() const {
+    return sm_sl;
+}
+
+constexpr uint8_t ibv::port::Attributes::getSubnetTimeout() const {
+    return subnet_timeout;
+}
+
+constexpr uint8_t ibv::port::Attributes::getInitTypeReply() const {
+    return init_type_reply;
+}
+
+constexpr uint8_t ibv::port::Attributes::getActiveWidth() const {
+    return active_width;
+}
+
+constexpr uint8_t ibv::port::Attributes::getActiveSpeed() const {
+    return active_speed;
+}
+
+constexpr uint8_t ibv::port::Attributes::getPhysState() const {
+    return phys_state;
+}
+
+constexpr uint8_t ibv::port::Attributes::getLinkLayer() const {
+    return link_layer;
+}
+
+constexpr const char *ibv::device::Attributes::getFwVer() const {
+    return static_cast<const char *>(fw_ver);
+}
+
+constexpr uint64_t ibv::device::Attributes::getNodeGuid() const {
+    return node_guid;
+}
+
+constexpr uint64_t ibv::device::Attributes::getSysImageGuid() const {
+    return sys_image_guid;
+}
+
+constexpr uint64_t ibv::device::Attributes::getMaxMrSize() const {
+    return max_mr_size;
+}
+
+constexpr uint64_t ibv::device::Attributes::getPageSizeCap() const {
+    return page_size_cap;
+}
+
+constexpr uint32_t ibv::device::Attributes::getVendorId() const {
+    return vendor_id;
+}
+
+constexpr uint32_t ibv::device::Attributes::getVendorPartId() const {
+    return vendor_part_id;
+}
+
+constexpr uint32_t ibv::device::Attributes::getHwVer() const {
+    return hw_ver;
+}
+
+constexpr int ibv::device::Attributes::getMaxQp() const {
+    return max_qp;
+}
+
+constexpr int ibv::device::Attributes::getMaxQpWr() const {
+    return max_qp_wr;
+}
+
+constexpr bool ibv::device::Attributes::hasCapability(ibv::device::CapabilityFlag flag) const {
+    const auto rawFlag = static_cast<ibv_device_cap_flags>(flag);
+    return (device_cap_flags & rawFlag) == rawFlag;
+}
+
+constexpr int ibv::device::Attributes::getMaxSge() const {
+    return max_sge;
+}
+
+constexpr int ibv::device::Attributes::getMaxSgeRd() const {
+    return max_sge_rd;
+}
+
+constexpr int ibv::device::Attributes::getMaxCq() const {
+    return max_cq;
+}
+
+constexpr int ibv::device::Attributes::getMaxCqe() const {
+    return max_cqe;
+}
+
+constexpr int ibv::device::Attributes::getMaxMr() const {
+    return max_mr;
+}
+
+constexpr int ibv::device::Attributes::getMaxPd() const {
+    return max_pd;
+}
+
+constexpr int ibv::device::Attributes::getMaxQpRdAtom() const {
+    return max_qp_rd_atom;
+}
+
+constexpr int ibv::device::Attributes::getMaxEeRdAtom() const {
+    return max_ee_rd_atom;
+}
+
+constexpr int ibv::device::Attributes::getMaxResRdAtom() const {
+    return max_res_rd_atom;
+}
+
+constexpr int ibv::device::Attributes::getMaxQpInitRdAtom() const {
+    return max_qp_init_rd_atom;
+}
+
+constexpr int ibv::device::Attributes::getMaxEeInitRdAtom() const {
+    return max_ee_init_rd_atom;
+}
+
+constexpr ibv::device::AtomicCapabilities ibv::device::Attributes::getAtomicCap() const {
+    return static_cast<AtomicCapabilities>(atomic_cap);
+}
+
+constexpr int ibv::device::Attributes::getMaxEe() const {
+    return max_ee;
+}
+
+constexpr int ibv::device::Attributes::getMaxRdd() const {
+    return max_rdd;
+}
+
+constexpr int ibv::device::Attributes::getMaxMw() const {
+    return max_mw;
+}
+
+constexpr int ibv::device::Attributes::getMaxRawIpv6Qp() const {
+    return max_raw_ipv6_qp;
+}
+
+constexpr int ibv::device::Attributes::getMaxRawEthyQp() const {
+    return max_raw_ethy_qp;
+}
+
+constexpr int ibv::device::Attributes::getMaxMcastGrp() const {
+    return max_mcast_grp;
+}
+
+constexpr int ibv::device::Attributes::getMaxMcastQpAttach() const {
+    return max_mcast_qp_attach;
+}
+
+constexpr int ibv::device::Attributes::getMaxTotalMcastQpAttach() const {
+    return max_total_mcast_qp_attach;
+}
+
+constexpr int ibv::device::Attributes::getMaxAh() const {
+    return max_ah;
+}
+
+constexpr int ibv::device::Attributes::getMaxFmr() const {
+    return max_fmr;
+}
+
+constexpr int ibv::device::Attributes::getMaxMapPerFmr() const {
+    return max_map_per_fmr;
+}
+
+constexpr int ibv::device::Attributes::getMaxSrq() const {
+    return max_srq;
+}
+
+constexpr int ibv::device::Attributes::getMaxSrqWr() const {
+    return max_srq_wr;
+}
+
+constexpr int ibv::device::Attributes::getMaxSrqSge() const {
+    return max_srq_sge;
+}
+
+constexpr uint16_t ibv::device::Attributes::getMaxPkeys() const {
+    return max_pkeys;
+}
+
+constexpr uint8_t ibv::device::Attributes::getLocalCaAckDelay() const {
+    return local_ca_ack_delay;
+}
+
+constexpr uint8_t ibv::device::Attributes::getPhysPortCnt() const {
+    return phys_port_cnt;
+}
+
+inline const char *ibv::device::Device::getName() {
+    return ibv_get_device_name(this);
+}
+
+inline uint64_t ibv::device::Device::getGUID() {
+    return ibv_get_device_guid(this);
+}
+
+inline std::unique_ptr<ibv::context::Context> ibv::device::Device::open() {
+    using Ctx = context::Context;
+    const auto context = ibv_open_device(this);
+    internal::checkPtr("ibv_open_device", context);
+    return std::unique_ptr<Ctx>(reinterpret_cast<Ctx *>(context));
+}
+
+inline ibv::device::DeviceList::DeviceList() : devices(reinterpret_cast<Device **>(ibv_get_device_list(&num_devices))) {
+    internal::checkPtr("ibv_get_device_list", devices);
+}
+
+inline ibv::device::DeviceList::~DeviceList() {
+    if (devices != nullptr) {
+        ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
+    }
+}
+
+inline ibv::device::DeviceList::DeviceList(ibv::device::DeviceList &&other) noexcept {
+    devices = other.devices;
+    other.devices = nullptr;
+    num_devices = other.num_devices;
+    other.num_devices = 0;
+}
+
+constexpr ibv::device::DeviceList &ibv::device::DeviceList::operator=(ibv::device::DeviceList &&other) noexcept {
+    if (devices != nullptr) {
+        ibv_free_device_list(reinterpret_cast<ibv_device **>(devices));
+    }
+    devices = other.devices;
+    other.devices = nullptr;
+    num_devices = other.num_devices;
+    other.num_devices = 0;
+    return *this;
+}
+
+constexpr ibv::device::Device **ibv::device::DeviceList::begin() {
+    return devices;
+}
+
+constexpr ibv::device::Device **ibv::device::DeviceList::end() {
+    return &devices[num_devices];
+}
+
+constexpr size_t ibv::device::DeviceList::size() const {
+    return static_cast<size_t>(num_devices);
+}
+
+constexpr ibv::device::Device *&ibv::device::DeviceList::operator[](int idx) {
+    return devices[idx];
+}
+
+std::string ibv::memoryregion::to_string(ibv::memoryregion::ReregErrorCode ec) {
+    switch (ec) {
+        case ReregErrorCode::INPUT:
+            return "IBV_REREG_MR_ERR_INPUT";
+        case ReregErrorCode::DONT_FORK_NEW:
+            return "IBV_REREG_MR_ERR_DONT_FORK_NEW";
+        case ReregErrorCode::DO_FORK_OLD:
+            return "IBV_REREG_MR_ERR_DO_FORK_OLD";
+        case ReregErrorCode::CMD:
+            return "IBV_REREG_MR_ERR_CMD";
+        case ReregErrorCode::CMD_AND_DO_FORK_NEW:
+            return "IBV_REREG_MR_ERR_CMD_AND_DO_FORK_NEW";
+    }
+    __builtin_unreachable();
+}
+
+std::string ibv::memoryregion::to_string(const ibv::memoryregion::MemoryRegion &mr) {
+    std::ostringstream addr;
+    addr << mr.getAddr();
+    return std::string("ptr=") + addr.str() + " size=" + std::to_string(mr.getLength()) + " key={..}";
+}
+
+constexpr ibv::memoryregion::RemoteAddress ibv::memoryregion::RemoteAddress::offset(uint64_t offset) const noexcept {
+    return RemoteAddress{address + offset, rkey};
+}
+
+inline void ibv::memoryregion::MemoryRegion::operator delete(void *ptr) noexcept {
+    const auto status = ibv_dereg_mr(reinterpret_cast<ibv_mr *>(ptr));
+    internal::checkStatusNoThrow("ibv_dereg_mr", status);
+}
+
+inline ibv::context::Context *ibv::memoryregion::MemoryRegion::getContext() const {
+    return reinterpret_cast<context::Context *>(context);
+}
+
+inline ibv::protectiondomain::ProtectionDomain *ibv::memoryregion::MemoryRegion::getPd() const {
+    return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
+}
+
+constexpr void *ibv::memoryregion::MemoryRegion::getAddr() const {
+    return addr;
+}
+
+constexpr size_t ibv::memoryregion::MemoryRegion::getLength() const {
+    return length;
+}
+
+constexpr uint32_t ibv::memoryregion::MemoryRegion::getHandle() const {
+    return handle;
+}
+
+constexpr uint32_t ibv::memoryregion::MemoryRegion::getLkey() const {
+    return lkey;
+}
+
+constexpr uint32_t ibv::memoryregion::MemoryRegion::getRkey() const {
+    return rkey;
+}
+
+inline ibv::memoryregion::Slice ibv::memoryregion::MemoryRegion::getSlice() {
+    return Slice{{reinterpret_cast<uintptr_t>(addr), static_cast<uint32_t>(length), lkey}};
+}
+
+inline ibv::memoryregion::Slice ibv::memoryregion::MemoryRegion::getSlice(uint32_t offset, uint32_t sliceLength) {
+    return Slice{{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey}};
+}
+
+inline ibv::memoryregion::RemoteAddress ibv::memoryregion::MemoryRegion::getRemoteAddress() {
+    return RemoteAddress{reinterpret_cast<uint64_t>(addr), rkey};
+}
+
+inline void ibv::memoryregion::MemoryRegion::reRegister(std::initializer_list<ibv::memoryregion::ReregFlag> changeFlags,
+                                                        ibv::protectiondomain::ProtectionDomain *newPd, void *newAddr,
+                                                        size_t newLength,
+                                                        std::initializer_list<ibv::AccessFlag> accessFlags) {
+    int changes = 0;
+    for (auto change : changeFlags) {
+        changes |= static_cast<ibv_rereg_mr_flags>(change);
+    }
+    int access = 0;
+    for (auto accessFlag : accessFlags) {
+        access |= static_cast<ibv_access_flags>(accessFlag);
+    }
+    const auto status = ibv_rereg_mr(this, changes, newPd, newAddr, newLength, access);
+
+    if (status != 0) {
+        const auto res = static_cast<ReregErrorCode>(status);
+        throw std::runtime_error("ibv_rereg_mr failed with: " + to_string(res));
+    }
+}
+
+constexpr ibv::workrequest::SendWr::SendWr() : ibv_send_wr{} {}
+
+constexpr void ibv::workrequest::SendWr::setId(uint64_t id) {
+    wr_id = id;
+}
+
+constexpr uint64_t ibv::workrequest::SendWr::getId() const {
+    return wr_id;
+}
+
+constexpr void ibv::workrequest::SendWr::setNext(ibv::workrequest::SendWr *wrList) {
+    next = wrList;
+}
+
+constexpr void ibv::workrequest::SendWr::setSge(ibv::memoryregion::Slice *scatterGatherArray, int size) {
+    sg_list = scatterGatherArray;
+    num_sge = size;
+}
+
+constexpr void ibv::workrequest::SendWr::setFlag(ibv::workrequest::Flags flag) {
+    send_flags |= static_cast<ibv_send_flags>(flag);
+}
+
+constexpr void ibv::workrequest::SendWr::setFence() {
+    setFlag(Flags::FENCE);
+}
+
+constexpr void ibv::workrequest::SendWr::setSignaled() {
+    setFlag(Flags::SIGNALED);
+}
+
+constexpr void ibv::workrequest::SendWr::setSolicited() {
+    setFlag(Flags::SOLICITED);
+}
+
+constexpr void ibv::workrequest::SendWr::setInline() {
+    setFlag(Flags::INLINE);
+}
+
+constexpr void ibv::workrequest::SendWr::setIpCsum() {
+    setFlag(Flags::IP_CSUM);
+}
+
+constexpr void ibv::workrequest::SendWr::setFlags(std::initializer_list<ibv::workrequest::Flags> flags) {
+    send_flags = 0;
+    for (const auto flag : flags) {
+        setFlag(flag);
+    }
+}
+
+constexpr void ibv::workrequest::SendWr::setOpcode(ibv::workrequest::Opcode opcode) {
+    this->opcode = static_cast<ibv_wr_opcode>(opcode);
+}
+
+constexpr void ibv::workrequest::SendWr::setImmData(uint32_t data) {
+    imm_data = data;
+}
+
+constexpr decltype(ibv::workrequest::SendWr::wr) &ibv::workrequest::SendWr::getWr() {
+    return wr;
+}
+
+constexpr void ibv::workrequest::Rdma::setRemoteAddress(ibv::memoryregion::RemoteAddress remoteAddress) {
+    getWr().rdma.remote_addr = remoteAddress.address;
+    getWr().rdma.rkey = remoteAddress.rkey;
+}
+
+constexpr void ibv::workrequest::Rdma::setRemoteAddress(uint64_t remote_addr, uint32_t rkey) {
+    getWr().rdma.remote_addr = remote_addr;
+    getWr().rdma.rkey = rkey;
+}
+
+constexpr ibv::workrequest::Write::Write() {
+    SendWr::setOpcode(Opcode::RDMA_WRITE);
+}
+
+constexpr ibv::workrequest::WriteWithImm::WriteWithImm() {
+    WriteWithImm::setOpcode(Opcode::RDMA_WRITE_WITH_IMM);
+}
+
+constexpr ibv::workrequest::Send::Send() {
+    SendWr::setOpcode(Opcode::SEND);
+}
+
+constexpr void ibv::workrequest::Send::setUDAddressHandle(ibv::ah::AddressHandle &ah) {
+    getWr().ud.ah = &ah;
+}
+
+constexpr void ibv::workrequest::Send::setUDRemoteQueue(uint32_t qpn, uint32_t qkey) {
+    getWr().ud.remote_qpn = qpn;
+    getWr().ud.remote_qkey = qkey;
+}
+
+constexpr ibv::workrequest::SendWithImm::SendWithImm() {
+    SendWr::setOpcode(Opcode::SEND_WITH_IMM);
+}
+
+constexpr ibv::workrequest::Read::Read() {
+    SendWr::setOpcode(Opcode::RDMA_READ);
+}
+
+constexpr void ibv::workrequest::Atomic::setRemoteAddress(ibv::memoryregion::RemoteAddress remoteAddress) {
+    getWr().atomic.remote_addr = remoteAddress.address;
+    getWr().atomic.rkey = remoteAddress.rkey;
+}
+
+constexpr void ibv::workrequest::Atomic::setRemoteAddress(uint64_t remote_addr, uint32_t rkey) {
+    getWr().atomic.remote_addr = remote_addr;
+    getWr().atomic.rkey = rkey;
+}
+
+constexpr ibv::workrequest::AtomicCompareSwap::AtomicCompareSwap() {
+    SendWr::setOpcode(Opcode::ATOMIC_CMP_AND_SWP);
+}
+
+constexpr ibv::workrequest::AtomicCompareSwap::AtomicCompareSwap(uint64_t compare, uint64_t swap)
+        : AtomicCompareSwap() {
+    setCompareValue(compare);
+    setSwapValue(swap);
+}
+
+constexpr void ibv::workrequest::AtomicCompareSwap::setCompareValue(uint64_t value) {
+    getWr().atomic.compare_add = value;
+}
+
+constexpr void ibv::workrequest::AtomicCompareSwap::setSwapValue(uint64_t value) {
+    getWr().atomic.swap = value;
+}
+
+constexpr ibv::workrequest::AtomicFetchAdd::AtomicFetchAdd() {
+    SendWr::setOpcode(Opcode::ATOMIC_FETCH_AND_ADD);
+}
+
+constexpr ibv::workrequest::AtomicFetchAdd::AtomicFetchAdd(uint64_t value) : AtomicFetchAdd() {
+    setAddValue(value);
+}
+
+constexpr void ibv::workrequest::AtomicFetchAdd::setAddValue(uint64_t value) {
+    getWr().atomic.compare_add = value;
+}
+
+constexpr void ibv::workrequest::Recv::setId(uint64_t id) {
+    wr_id = id;
+}
+
+constexpr uint64_t ibv::workrequest::Recv::getId() const {
+    return wr_id;
+}
+
+constexpr void ibv::workrequest::Recv::setNext(ibv::workrequest::Recv *next) {
+    this->next = next;
+}
+
+constexpr void ibv::workrequest::Recv::setSge(ibv::memoryregion::Slice *scatterGatherArray, int size) {
+    sg_list = scatterGatherArray;
+    num_sge = size;
+}
+
+constexpr void ibv::memorywindow::BindInfo::setMr(ibv::memoryregion::MemoryRegion &memoryregion) {
+    mr = &memoryregion;
+}
+
+constexpr void ibv::memorywindow::BindInfo::setAddr(uint64_t addr) {
+    this->addr = addr;
+}
+
+constexpr void ibv::memorywindow::BindInfo::setLength(uint64_t length) {
+    this->length = length;
+}
+
+constexpr void ibv::memorywindow::BindInfo::setMwAccessFlags(std::initializer_list<ibv::AccessFlag> accessFlags) {
+    mw_access_flags = 0;
+    for (auto accessFlag : accessFlags) {
+        mw_access_flags |= static_cast<ibv_access_flags>(accessFlag);
+    }
+}
+
+constexpr void ibv::memorywindow::Bind::setWrId(uint64_t id) {
+    wr_id = id;
+}
+
+constexpr void ibv::memorywindow::Bind::setSendFlags(std::initializer_list<ibv::workrequest::Flags> flags) {
+    send_flags = 0;
+    for (auto flag : flags) {
+        send_flags |= static_cast<ibv_send_flags>(flag);
+    }
+}
+
+inline ibv::memorywindow::BindInfo &ibv::memorywindow::Bind::getBindInfo() {
+    return reinterpret_cast<BindInfo &>(bind_info);
+}
+
+inline void ibv::memorywindow::MemoryWindow::operator delete(void *ptr) noexcept {
+    const auto status = ibv_dealloc_mw(reinterpret_cast<ibv_mw *>(ptr));
+    internal::checkStatusNoThrow("ibv_dealloc_mw", status);
+}
+
+inline ibv::context::Context *ibv::memorywindow::MemoryWindow::getContext() const {
+    return reinterpret_cast<context::Context *>(context);
+}
+
+inline ibv::protectiondomain::ProtectionDomain *ibv::memorywindow::MemoryWindow::getPd() const {
+    return reinterpret_cast<protectiondomain::ProtectionDomain *>(pd);
+}
+
+constexpr uint32_t ibv::memorywindow::MemoryWindow::getRkey() const {
+    return rkey;
+}
+
+constexpr uint32_t ibv::memorywindow::MemoryWindow::getHandle() const {
+    return handle;
+}
+
+constexpr ibv::memorywindow::Type ibv::memorywindow::MemoryWindow::getType() {
+    return static_cast<Type>(type);
+}
+
+constexpr ibv::srq::Attributes::Attributes(uint32_t max_wr, uint32_t max_sge, uint32_t srq_limit) :
+        ibv_srq_attr{max_wr, max_sge, srq_limit} {}
+
+constexpr ibv::srq::InitAttributes::InitAttributes(ibv::srq::Attributes attrs, void *context) :
+        ibv_srq_init_attr{context, attrs} {}
+
+inline void ibv::srq::SharedReceiveQueue::operator delete(void *ptr) noexcept {
+    const auto status = ibv_destroy_srq(reinterpret_cast<ibv_srq *>(ptr));
+    internal::checkStatusNoThrow("ibv_destroy_srq", status);
+}
+
+inline void ibv::srq::SharedReceiveQueue::modify(ibv::srq::Attributes &attr,
+                                                 std::initializer_list<ibv::srq::AttributeMask> modifiedAttrs) {
+    int modifiedMask = 0;
+    for (auto mod : modifiedAttrs) {
+        modifiedMask |= static_cast<ibv_srq_attr_mask>(mod);
+    }
+
+    const auto status = ibv_modify_srq(this, &attr, modifiedMask);
+    internal::checkStatus("ibv_modify_srq", status);
+}
+
+inline void ibv::srq::SharedReceiveQueue::query(ibv::srq::Attributes &res) {
+    const auto status = ibv_query_srq(this, &res);
+    internal::checkStatus("ibv_query_srq", status);
+}
+
+inline ibv::srq::Attributes ibv::srq::SharedReceiveQueue::query() {
+    Attributes res{};
+    query(res);
+    return res;
+}
+
+inline uint32_t ibv::srq::SharedReceiveQueue::getNumber() {
+    uint32_t num = 0;
+    const auto status = ibv_get_srq_num(this, &num);
+    internal::checkStatus("ibv_get_srq_num", status);
+    return num;
+}
+
+inline void ibv::srq::SharedReceiveQueue::postRecv(ibv::workrequest::Recv &wr, ibv::workrequest::Recv *&badWr) {
+    const auto status = ibv_post_srq_recv(this, &wr, reinterpret_cast<ibv_recv_wr **>(&badWr));
+    internal::checkStatus("ibv_post_srq_recv", status);
+}
+
+constexpr void
+ibv::xrcd::InitAttributes::setValidComponents(std::initializer_list<ibv::xrcd::InitAttributesMask> masks) {
+    uint32_t newMask = 0;
+    for (auto mask : masks) {
+        newMask |= static_cast<uint32_t>(mask);
+    }
+    this->comp_mask = newMask;
+}
+
+constexpr void ibv::xrcd::InitAttributes::setFd(int fd) {
+    this->fd = fd;
+}
+
+constexpr void ibv::xrcd::InitAttributes::setOflags(std::initializer_list<ibv::xrcd::OpenFlags> oflags) {
+    int flags = 0;
+    for (auto flag : oflags) {
+        flags |= static_cast<int>(flag);
+    }
+    this->oflags = flags;
+}
+
+inline void ibv::xrcd::ExtendedConnectionDomain::operator delete(void *ptr) noexcept {
+    const auto status = ibv_close_xrcd(reinterpret_cast<ibv_xrcd *>(ptr));
+    internal::checkStatusNoThrow("ibv_close_xrcd", status);
+}
+
+inline std::string ibv::queuepair::to_string(ibv::queuepair::State state) {
+    switch (state) {
+        case State::RESET:
+            return "IBV_QPS_RESET";
+        case State::INIT:
+            return "IBV_QPS_INIT";
+        case State::RTR:
+            return "IBV_QPS_RTR";
+        case State::RTS:
+            return "IBV_QPS_RTS";
+        case State::SQD:
+            return "IBV_QPS_SQD";
+        case State::SQE:
+            return "IBV_QPS_SQE";
+        case State::ERR:
+            return "IBV_QPS_ERR";
+        case State::UNKNOWN:
+            return "IBV_QPS_UNKNOWN";
+    }
+    __builtin_unreachable();
+}
+
+inline std::string ibv::queuepair::to_string(ibv::queuepair::MigrationState ms) {
+    switch (ms) {
+        case MigrationState::MIGRATED:
+            return "IBV_MIG_MIGRATED";
+        case MigrationState::REARM:
+            return "IBV_MIG_REARM";
+        case MigrationState::ARMED:
+            return "IBV_MIG_ARMED";
+    }
+    __builtin_unreachable();
+}
+
+constexpr uint32_t ibv::queuepair::Capabilities::getMaxSendWr() const {
+    return max_send_wr;
+}
+
+constexpr uint32_t ibv::queuepair::Capabilities::getMaxRecvWr() const {
+    return max_recv_wr;
+}
+
+constexpr uint32_t ibv::queuepair::Capabilities::getMaxSendSge() const {
+    return max_send_sge;
+}
+
+constexpr uint32_t ibv::queuepair::Capabilities::getMaxRecvSge() const {
+    return max_recv_sge;
+}
+
+constexpr uint32_t ibv::queuepair::Capabilities::getMaxInlineData() const {
+    return max_inline_data;
+}
+
+constexpr void ibv::queuepair::OpenAttributes::setCompMask(std::initializer_list<ibv::queuepair::OpenAttrMask> masks) {
+    uint32_t newMask = 0;
+    for (auto mask : masks) {
+        newMask |= static_cast<uint32_t>(mask);
+    }
+    this->comp_mask = newMask;
+}
+
+constexpr void ibv::queuepair::OpenAttributes::setQpNum(uint32_t qp_num) {
+    this->qp_num = qp_num;
+}
+
+constexpr void ibv::queuepair::OpenAttributes::setXrcd(ibv::xrcd::ExtendedConnectionDomain &xrcd) {
+    this->xrcd = &xrcd;
+}
+
+constexpr void ibv::queuepair::OpenAttributes::setQpContext(void *qp_context) {
+    this->qp_context = qp_context;
+}
+
+constexpr void ibv::queuepair::OpenAttributes::setQpType(ibv::queuepair::Type qp_type) {
+    this->qp_type = static_cast<ibv_qp_type>(qp_type);
+}
+
+constexpr ibv::queuepair::State ibv::queuepair::Attributes::getQpState() const {
+    return static_cast<State>(qp_state);
+}
+
+constexpr void ibv::queuepair::Attributes::setQpState(ibv::queuepair::State qp_state) {
+    this->qp_state = static_cast<ibv_qp_state>(qp_state);
+}
+
+constexpr void ibv::queuepair::Attributes::setCurQpState(ibv::queuepair::State cur_qp_state) {
+    this->cur_qp_state = static_cast<ibv_qp_state>(cur_qp_state);
+}
+
+constexpr ibv::Mtu ibv::queuepair::Attributes::getPathMtu() const {
+    return static_cast<Mtu>(path_mtu);
+}
+
+constexpr void ibv::queuepair::Attributes::setPathMtu(ibv::Mtu path_mtu) {
+    this->path_mtu = static_cast<ibv_mtu>(path_mtu);
+}
+
+constexpr ibv::queuepair::MigrationState ibv::queuepair::Attributes::getPathMigState() const {
+    return static_cast<MigrationState>(path_mig_state);
+}
+
+constexpr void ibv::queuepair::Attributes::setPathMigState(ibv::queuepair::MigrationState path_mig_state) {
+    this->path_mig_state = static_cast<ibv_mig_state>(path_mig_state);
+}
+
+constexpr uint32_t ibv::queuepair::Attributes::getQkey() const {
+    return qkey;
+}
+
+constexpr void ibv::queuepair::Attributes::setQkey(uint32_t qkey) {
+    this->qkey = qkey;
+}
+
+constexpr uint32_t ibv::queuepair::Attributes::getRqPsn() const {
+    return rq_psn;
+}
+
+constexpr void ibv::queuepair::Attributes::setRqPsn(uint32_t rq_psn) {
+    this->rq_psn = rq_psn;
+}
+
+constexpr uint32_t ibv::queuepair::Attributes::getSqPsn() const {
+    return sq_psn;
+}
+
+constexpr void ibv::queuepair::Attributes::setSqPsn(uint32_t sq_psn) {
+    this->sq_psn = sq_psn;
+}
+
+constexpr uint32_t ibv::queuepair::Attributes::getDestQpNum() const {
+    return dest_qp_num;
+}
+
+constexpr void ibv::queuepair::Attributes::setDestQpNum(uint32_t dest_qp_num) {
+    this->dest_qp_num = dest_qp_num;
+}
+
+constexpr bool ibv::queuepair::Attributes::hasQpAccessFlags(ibv::AccessFlag flag) const {
+    const auto rawFlag = static_cast<ibv_access_flags>(flag);
+    return (qp_access_flags & rawFlag) == rawFlag;
+}
+
+constexpr void ibv::queuepair::Attributes::setQpAccessFlags(std::initializer_list<ibv::AccessFlag> qp_access_flags) {
+    int raw = 0;
+    for (auto flag : qp_access_flags) {
+        raw |= static_cast<ibv_access_flags>(flag);
+    }
+    this->qp_access_flags = raw;
+}
+
+constexpr const ibv::queuepair::Capabilities &ibv::queuepair::Attributes::getCap() const {
+    return *static_cast<const Capabilities *>(&cap);
+}
+
+constexpr void ibv::queuepair::Attributes::setCap(const ibv::queuepair::Capabilities &cap) {
+    this->cap = cap;
+}
+
+constexpr const ibv::ah::Attributes &ibv::queuepair::Attributes::getAhAttr() const {
+    return *static_cast<const ah::Attributes *>(&ah_attr);
+}
+
+constexpr void ibv::queuepair::Attributes::setAhAttr(const ibv::ah::Attributes &ah_attr) {
+    this->ah_attr = ah_attr;
+}
+
+constexpr const ibv::ah::Attributes &ibv::queuepair::Attributes::getAltAhAttr() const {
+    return *static_cast<const ah::Attributes *>(&alt_ah_attr);
+}
+
+constexpr void ibv::queuepair::Attributes::setAltAhAttr(const ibv::ah::Attributes &alt_ah_attr) {
+    this->alt_ah_attr = alt_ah_attr;
+}
+
+constexpr uint16_t ibv::queuepair::Attributes::getPkeyIndex() const {
+    return pkey_index;
+}
+
+constexpr void ibv::queuepair::Attributes::setPkeyIndex(uint16_t pkey_index) {
+    this->pkey_index = pkey_index;
+}
+
+constexpr uint16_t ibv::queuepair::Attributes::getAltPkeyIndex() const {
+    return alt_pkey_index;
+}
+
+constexpr void ibv::queuepair::Attributes::setAltPkeyIndex(uint16_t alt_pkey_index) {
+    this->alt_pkey_index = alt_pkey_index;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getEnSqdAsyncNotify() const {
+    return en_sqd_async_notify;
+}
+
+constexpr void ibv::queuepair::Attributes::setEnSqdAsyncNotify(uint8_t en_sqd_async_notify) {
+    this->en_sqd_async_notify = en_sqd_async_notify;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getSqDraining() const {
+    return sq_draining;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getMaxRdAtomic() const {
+    return max_rd_atomic;
+}
+
+constexpr void ibv::queuepair::Attributes::setMaxRdAtomic(uint8_t max_rd_atomic) {
+    this->max_rd_atomic = max_rd_atomic;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getMaxDestRdAtomic() const {
+    return max_dest_rd_atomic;
+}
+
+constexpr void ibv::queuepair::Attributes::setMaxDestRdAtomic(uint8_t max_dest_rd_atomic) {
+    this->max_dest_rd_atomic = max_dest_rd_atomic;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getMinRnrTimer() const {
+    return min_rnr_timer;
+}
+
+constexpr void ibv::queuepair::Attributes::setMinRnrTimer(uint8_t min_rnr_timer) {
+    this->min_rnr_timer = min_rnr_timer;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getPortNum() const {
+    return port_num;
+}
+
+constexpr void ibv::queuepair::Attributes::setPortNum(uint8_t port_num) {
+    this->port_num = port_num;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getTimeout() const {
+    return timeout;
+}
+
+constexpr void ibv::queuepair::Attributes::setTimeout(uint8_t timeout) {
+    this->timeout = timeout;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getRetryCnt() const {
+    return retry_cnt;
+}
+
+constexpr void ibv::queuepair::Attributes::setRetryCnt(uint8_t retry_cnt) {
+    this->retry_cnt = retry_cnt;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getRnrRetry() const {
+    return rnr_retry;
+}
+
+constexpr void ibv::queuepair::Attributes::setRnrRetry(uint8_t rnr_retry) {
+    this->rnr_retry = rnr_retry;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getAltPortNum() const {
+    return alt_port_num;
+}
+
+constexpr void ibv::queuepair::Attributes::setAltPortNum(uint8_t alt_port_num) {
+    this->alt_port_num = alt_port_num;
+}
+
+constexpr uint8_t ibv::queuepair::Attributes::getAltTimeout() const {
+    return alt_timeout;
+}
+
+constexpr void ibv::queuepair::Attributes::setAltTimeout(uint8_t alt_timeout) {
+    this->alt_timeout = alt_timeout;
+}
+
+constexpr void ibv::queuepair::InitAttributes::setContext(void *context) {
+    qp_context = context;
+}
+
+constexpr void ibv::queuepair::InitAttributes::setSendCompletionQueue(ibv::completions::CompletionQueue &cq) {
+    send_cq = &cq;
+}
+
+constexpr void ibv::queuepair::InitAttributes::setRecvCompletionQueue(ibv::completions::CompletionQueue &cq) {
+    recv_cq = &cq;
+}
+
+constexpr void ibv::queuepair::InitAttributes::setSharedReceiveQueue(ibv::srq::SharedReceiveQueue &sharedReceiveQueue) {
+    srq = &sharedReceiveQueue;
+}
+
+constexpr void ibv::queuepair::InitAttributes::setCapabilities(const ibv::queuepair::Capabilities &caps) {
+    cap = caps;
+}
+
+constexpr void ibv::queuepair::InitAttributes::setType(ibv::queuepair::Type type) {
+    qp_type = static_cast<ibv_qp_type>(type);
+}
+
+constexpr void ibv::queuepair::InitAttributes::setSignalAll(bool shouldSignal) {
+    sq_sig_all = static_cast<int>(shouldSignal);
+}
+
+inline void ibv::queuepair::QueuePair::operator delete(void *ptr) noexcept {
+    const auto status = ibv_destroy_qp(reinterpret_cast<ibv_qp *>(ptr));
+    internal::checkStatusNoThrow("ibv_destroy_qp", status);
+}
+
+constexpr uint32_t ibv::queuepair::QueuePair::getNum() const {
+    return qp_num;
+}
+
+inline void ibv::queuepair::QueuePair::modify(ibv::queuepair::Attributes &attr,
+                                              std::initializer_list<ibv::queuepair::AttrMask> modifiedAttributes) {
+    int mask = 0;
+    for (auto mod : modifiedAttributes) {
+        mask |= static_cast<ibv_qp_attr_mask>(mod);
+    }
+    const auto status = ibv_modify_qp(this, &attr, mask);
+    internal::checkStatus("ibv_modify_qp", status);
+}
+
+inline void ibv::queuepair::QueuePair::query(ibv::queuepair::Attributes &attr,
+                                             std::initializer_list<ibv::queuepair::AttrMask> queriedAttributes,
+                                             ibv::queuepair::InitAttributes &init_attr,
+                                             std::initializer_list<ibv::queuepair::InitAttrMask> queriedInitAttributes) {
+    int mask = 0;
+    for (auto query : queriedAttributes) {
+        mask |= static_cast<ibv_qp_attr_mask>(query);
+    }
+    for (auto query : queriedInitAttributes) {
+        mask |= static_cast<ibv_qp_init_attr_mask>(query);
+    }
+    const auto status = ibv_query_qp(this, &attr, mask, &init_attr);
+    internal::checkStatus("ibv_query_qp", status);
+}
+
+inline std::tuple<ibv::queuepair::Attributes, ibv::queuepair::InitAttributes>
+ibv::queuepair::QueuePair::query(std::initializer_list<ibv::queuepair::AttrMask> queriedAttributes,
+                                 std::initializer_list<ibv::queuepair::InitAttrMask> queriedInitAttributes) {
+    Attributes attributes;
+    InitAttributes initAttributes;
+    query(attributes, queriedAttributes, initAttributes, queriedInitAttributes);
+    return {attributes, initAttributes};
+}
+
+inline ibv::queuepair::Attributes
+ibv::queuepair::QueuePair::query(std::initializer_list<ibv::queuepair::AttrMask> queriedAttributes) {
+    auto[attributes, initAttributes] = query(queriedAttributes, {});
+    std::ignore = initAttributes;
+    return attributes;
+}
+
+inline ibv::queuepair::InitAttributes
+ibv::queuepair::QueuePair::query(std::initializer_list<ibv::queuepair::InitAttrMask> queriedInitAttributes) {
+    auto[attributes, initAttributes] = query({}, queriedInitAttributes);
+    std::ignore = attributes;
+    return initAttributes;
+}
+
+inline void ibv::queuepair::QueuePair::postSend(ibv::workrequest::SendWr &wr, ibv::workrequest::SendWr *&bad_wr) {
+    const auto status = ibv_post_send(this, &wr, reinterpret_cast<ibv_send_wr **>(&bad_wr));
+    internal::checkStatus("ibv_post_send", status);
+}
+
+inline void ibv::queuepair::QueuePair::postRecv(ibv::workrequest::Recv &wr, ibv::workrequest::Recv *&bad_wr) {
+    const auto status = ibv_post_recv(this, &wr, reinterpret_cast<ibv_recv_wr **>(&bad_wr));
+    internal::checkStatus("ibv_post_recv", status);
+}
+
+inline std::unique_ptr<ibv::flow::Flow> ibv::queuepair::QueuePair::createFlow(ibv::flow::Attributes &attr) {
+    auto res = ibv_create_flow(this, &attr);
+    internal::checkPtr("ibv_create_flow", res);
+    return std::unique_ptr<flow::Flow>(reinterpret_cast<flow::Flow *>(res));
+}
+
+inline uint32_t
+ibv::queuepair::QueuePair::bindMemoryWindow(ibv::memorywindow::MemoryWindow &mw, ibv::memorywindow::Bind &info) {
+    const auto status = ibv_bind_mw(this, &mw, &info);
+    internal::checkStatus("ibv_bind_mw", status);
+    return mw.getRkey();
+}
+
+inline void ibv::queuepair::QueuePair::attachToMcastGroup(const ibv::Gid &gid, uint16_t lid) {
+    const auto status = ibv_attach_mcast(this, &gid.underlying, lid);
+    internal::checkStatus("ibv_attach_mcast", status);
+}
+
+inline void ibv::queuepair::QueuePair::detachFromMcastGroup(const ibv::Gid &gid, uint16_t lid) {
+    const auto status = ibv_detach_mcast(this, &gid.underlying, lid);
+    internal::checkStatus("ibv_detach_mcast", status);
+}
+
+constexpr ibv::event::Type ibv::event::AsyncEvent::getType() const {
+    return static_cast<Type>(event_type);
+}
+
+constexpr ibv::event::Cause ibv::event::AsyncEvent::getCause() const {
+    switch (getType()) {
+        case Type::QP_FATAL:
+        case Type::QP_REQ_ERR:
+        case Type::QP_ACCESS_ERR:
+        case Type::COMM_EST:
+        case Type::SQ_DRAINED:
+        case Type::PATH_MIG:
+        case Type::PATH_MIG_ERR:
+        case Type::QP_LAST_WQE_REACHED:
+            return Cause::QueuePair;
+        case Type::CQ_ERR:
+            return Cause::CompletionQueue;
+        case Type::SRQ_ERR:
+        case Type::SRQ_LIMIT_REACHED:
+            return Cause::SharedReceiveQueue;
+        case Type::PORT_ACTIVE:
+        case Type::PORT_ERR:
+        case Type::LID_CHANGE:
+        case Type::PKEY_CHANGE:
+        case Type::SM_CHANGE:
+        case Type::CLIENT_REREGISTER:
+        case Type::GID_CHANGE:
+            return Cause::Port;
+        case Type::DEVICE_FATAL:
+            return Cause::Device;
+    }
+    __builtin_unreachable();
+}
+
+inline ibv::queuepair::QueuePair *ibv::event::AsyncEvent::getCausingQp() const {
+    checkCause(Cause::QueuePair);
+    return reinterpret_cast<queuepair::QueuePair *>(element.qp);
+}
+
+inline ibv::completions::CompletionQueue *ibv::event::AsyncEvent::getCausingCq() const {
+    checkCause(Cause::CompletionQueue);
+    return reinterpret_cast<completions::CompletionQueue *>(element.cq);
+}
+
+inline ibv::srq::SharedReceiveQueue *ibv::event::AsyncEvent::getCausingSrq() const {
+    checkCause(Cause::SharedReceiveQueue);
+    return reinterpret_cast<srq::SharedReceiveQueue *>(element.srq);
+}
+
+constexpr int ibv::event::AsyncEvent::getCausingPort() const {
+    checkCause(Cause::Port);
+    return element.port_num;
+}
+
+inline void ibv::event::AsyncEvent::ack() {
+    ibv_ack_async_event(this);
+}
+
+constexpr void ibv::event::AsyncEvent::checkCause(ibv::event::Cause cause) const {
+    if (getCause() != cause) {
+        throw std::logic_error("Invalid event cause accessed");
+    }
+}
+
+inline void ibv::protectiondomain::ProtectionDomain::operator delete(void *ptr) noexcept {
+    const auto status = ibv_dealloc_pd(reinterpret_cast<ibv_pd *>(ptr));
+    internal::checkStatusNoThrow("ibv_dealloc_pd", status);
+}
+
+inline ibv::context::Context *ibv::protectiondomain::ProtectionDomain::getContext() const {
+    return reinterpret_cast<context::Context *>(context);
+}
+
+constexpr uint32_t ibv::protectiondomain::ProtectionDomain::getHandle() const {
+    return handle;
+}
+
+inline std::unique_ptr<ibv::memoryregion::MemoryRegion>
+ibv::protectiondomain::ProtectionDomain::registerMemoryRegion(void *addr, size_t length,
+                                                              std::initializer_list<ibv::AccessFlag> flags) {
+    using MR = memoryregion::MemoryRegion;
+    int access = 0;
+    for (auto flag : flags) {
+        access |= static_cast<ibv_access_flags>(flag);
+    }
+    const auto mr = ibv_reg_mr(this, addr, length, access);
+    internal::checkPtr("ibv_reg_mr", mr);
+    return std::unique_ptr<MR>(reinterpret_cast<MR *>(mr));
+}
+
+inline std::unique_ptr<ibv::memorywindow::MemoryWindow>
+ibv::protectiondomain::ProtectionDomain::allocMemoryWindow(ibv::memorywindow::Type type) {
+    using MW = memorywindow::MemoryWindow;
+    const auto mw = ibv_alloc_mw(this, static_cast<ibv_mw_type>(type));
+    internal::checkPtr("ibv_alloc_mw", mw);
+    return std::unique_ptr<MW>(reinterpret_cast<MW *>(mw));
+}
+
+inline std::unique_ptr<ibv::srq::SharedReceiveQueue>
+ibv::protectiondomain::ProtectionDomain::createSrq(ibv::srq::InitAttributes &initAttributes) {
+    using SRQ = srq::SharedReceiveQueue;
+    const auto srq = ibv_create_srq(this, &initAttributes);
+    internal::checkPtr("ibv_create_srq", srq);
+    return std::unique_ptr<SRQ>(reinterpret_cast<SRQ *>(srq));
+}
+
+inline std::unique_ptr<ibv::queuepair::QueuePair>
+ibv::protectiondomain::ProtectionDomain::createQueuePair(ibv::queuepair::InitAttributes &initAttributes) {
+    using QP = queuepair::QueuePair;
+    const auto qp = ibv_create_qp(this, &initAttributes);
+    internal::checkPtr("ibv_create_qp", qp);
+    return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
+}
+
+inline std::unique_ptr<ibv::ah::AddressHandle>
+ibv::protectiondomain::ProtectionDomain::createAddressHandle(ibv::ah::Attributes attributes) {
+    using AH = ah::AddressHandle;
+    const auto ah = ibv_create_ah(this, &attributes);
+    internal::checkPtr("ibv_create_ah", ah);
+    return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
+}
+
+inline std::unique_ptr<ibv::ah::AddressHandle>
+ibv::protectiondomain::ProtectionDomain::createAddressHandleFromWorkCompletion(ibv::workcompletion::WorkCompletion &wc,
+                                                                               ibv::GlobalRoutingHeader *grh,
+                                                                               uint8_t port_num) {
+    using AH = ah::AddressHandle;
+    const auto ah = ibv_create_ah_from_wc(this, &wc, grh, port_num);
+    internal::checkPtr("ibv_create_ah_from_wc", ah);
+    return std::unique_ptr<AH>(reinterpret_cast<AH *>(ah));
+}
+
+inline void ibv::context::Context::operator delete(void *ptr) noexcept {
+    const auto status = ibv_close_device(reinterpret_cast<ibv_context *>(ptr));
+    internal::checkStatusNoThrow("ibv_close_device", status);
+}
+
+inline ibv::device::Device *ibv::context::Context::getDevice() const {
+    return reinterpret_cast<device::Device *>(device);
+}
+
+inline ibv::device::Attributes ibv::context::Context::queryAttributes() {
+    device::Attributes res;
+    const auto status = ibv_query_device(this, &res);
+    internal::checkStatus("ibv_query_device", status);
+    return res;
+}
+
+inline ibv::port::Attributes ibv::context::Context::queryPort(uint8_t port) {
+    port::Attributes res;
+    const auto status = ibv_query_port(this, port, &res);
+    internal::checkStatus("ibv_query_port", status);
+    return res;
+}
+
+inline ibv::event::AsyncEvent ibv::context::Context::getAsyncEvent() {
+    event::AsyncEvent res{};
+    const auto status = ibv_get_async_event(this, &res);
+    internal::checkStatus("ibv_get_async_event", status);
+    return res;
+}
+
+inline ibv::Gid ibv::context::Context::queryGid(uint8_t port_num, int index) {
+    Gid res{};
+    const auto status = ibv_query_gid(this, port_num, index, &res.underlying);
+    internal::checkStatus("ibv_query_gid", status);
+    return res;
+}
+
+inline uint16_t ibv::context::Context::queryPkey(uint8_t port_num, int index) {
+    uint16_t res{};
+    const auto status = ibv_query_pkey(this, port_num, index, &res);
+    internal::checkStatus("ibv_query_pkey", status);
+    return res;
+}
+
+inline std::unique_ptr<ibv::protectiondomain::ProtectionDomain> ibv::context::Context::allocProtectionDomain() {
+    using PD = protectiondomain::ProtectionDomain;
+    const auto pd = ibv_alloc_pd(this);
+    internal::checkPtr("ibv_alloc_pd", pd);
+    return std::unique_ptr<PD>(reinterpret_cast<PD *>(pd));
+}
+
+inline std::unique_ptr<ibv::xrcd::ExtendedConnectionDomain>
+ibv::context::Context::openExtendedConnectionDomain(ibv::xrcd::InitAttributes &attr) {
+    using XRCD = xrcd::ExtendedConnectionDomain;
+    const auto xrcd = ibv_open_xrcd(this, &attr);
+    internal::checkPtr("ibv_open_xrcd", xrcd);
+    return std::unique_ptr<XRCD>(reinterpret_cast<XRCD *>(xrcd));
+}
+
+inline std::unique_ptr<ibv::completions::CompletionEventChannel> ibv::context::Context::createCompletionEventChannel() {
+    using CEC = completions::CompletionEventChannel;
+    const auto compChannel = ibv_create_comp_channel(this);
+    internal::checkPtr("ibv_create_comp_channel", compChannel);
+    return std::unique_ptr<CEC>(reinterpret_cast<CEC *>(compChannel));
+}
+
+inline std::unique_ptr<ibv::completions::CompletionQueue>
+ibv::context::Context::createCompletionQueue(int cqe, void *context, ibv::completions::CompletionEventChannel &cec,
+                                             int completionVector) {
+    using CQ = completions::CompletionQueue;
+    const auto cq = ibv_create_cq(this, cqe, context, &cec, completionVector);
+    internal::checkPtr("ibv_create_cq", cq);
+    return std::unique_ptr<CQ>(reinterpret_cast<CQ *>(cq));
+}
+
+inline std::unique_ptr<ibv::queuepair::QueuePair>
+ibv::context::Context::openSharableQueuePair(ibv::queuepair::OpenAttributes &openAttributes) {
+    using QP = queuepair::QueuePair;
+    const auto qp = ibv_open_qp(this, &openAttributes);
+    internal::checkPtr("ibv_open_qp", qp);
+    return std::unique_ptr<QP>(reinterpret_cast<QP *>(qp));
+}
+
+inline void
+ibv::context::Context::initAhAttributesFromWorkCompletion(uint8_t port_num, ibv::workcompletion::WorkCompletion &wc,
+                                                          ibv::GlobalRoutingHeader *grh,
+                                                          ibv::ah::Attributes &attributes) {
+    const auto status = ibv_init_ah_from_wc(this, port_num, &wc, grh, &attributes);
+    internal::checkStatus("ibv_init_ah_from_wc", status);
+}
+
+inline ibv::ah::Attributes
+ibv::context::Context::getAhAttributesFromWorkCompletion(uint8_t port_num, ibv::workcompletion::WorkCompletion &wc,
+                                                         ibv::GlobalRoutingHeader *grh) {
+    ah::Attributes attributes;
+    initAhAttributesFromWorkCompletion(port_num, wc, grh, attributes);
+    return attributes;
+}
+
 #endif
