@@ -908,6 +908,8 @@ namespace ibv {
         inline std::string to_string(ReregErrorCode ec);
 
         struct Slice : public ibv_sge {
+            Slice(uint64_t addr, uint32_t length, uint32_t lkey) :
+                    ibv_sge{addr, length, lkey} {}
         };
 
         struct RemoteAddress {
@@ -2681,11 +2683,11 @@ constexpr uint32_t ibv::memoryregion::MemoryRegion::getRkey() const {
 }
 
 inline ibv::memoryregion::Slice ibv::memoryregion::MemoryRegion::getSlice() {
-    return Slice{{reinterpret_cast<uintptr_t>(addr), static_cast<uint32_t>(length), lkey}};
+    return Slice{reinterpret_cast<uintptr_t>(addr), static_cast<uint32_t>(length), lkey};
 }
 
 inline ibv::memoryregion::Slice ibv::memoryregion::MemoryRegion::getSlice(uint32_t offset, uint32_t sliceLength) {
-    return Slice{{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey}};
+    return Slice{reinterpret_cast<uintptr_t>(addr) + offset, sliceLength, lkey};
 }
 
 inline ibv::memoryregion::RemoteAddress ibv::memoryregion::MemoryRegion::getRemoteAddress() {
@@ -3348,16 +3350,12 @@ ibv::queuepair::QueuePair::query(std::initializer_list<ibv::queuepair::AttrMask>
 
 inline ibv::queuepair::Attributes
 ibv::queuepair::QueuePair::query(std::initializer_list<ibv::queuepair::AttrMask> queriedAttributes) {
-    auto[attributes, initAttributes] = query(queriedAttributes, {});
-    std::ignore = initAttributes;
-    return attributes;
+    return std::get<0>(query(queriedAttributes, {}));
 }
 
 inline ibv::queuepair::InitAttributes
 ibv::queuepair::QueuePair::query(std::initializer_list<ibv::queuepair::InitAttrMask> queriedInitAttributes) {
-    auto[attributes, initAttributes] = query({}, queriedInitAttributes);
-    std::ignore = attributes;
-    return initAttributes;
+    return std::get<1>(query({}, queriedInitAttributes));
 }
 
 inline void ibv::queuepair::QueuePair::postSend(ibv::workrequest::SendWr &wr, ibv::workrequest::SendWr *&bad_wr) {

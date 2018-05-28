@@ -8,7 +8,7 @@ As libibverbs already uses some object-oriented approaches, so a C++ wrapper pro
 for resource management.  
 
 ### Building
-You'll probably need a reasonably modern compiler for this with basic C++17 support. 
+You'll probably need a reasonably modern compiler for this with basic C++14 support. 
 
 libibverbscpp is currently header-only. Adding it to the include path and linking libibverbs should be sufficient.
 

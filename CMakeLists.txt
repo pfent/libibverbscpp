@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9)
 project(libibverbscpp)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 14)
 #set(CMAKE_CXX_COMPILER clang++)
 #set(WARNINGS "-Weverything -Wno-c++98-compat -Wno-documentation-unknown-command")
 set(WARNINGS "-Wall -Wextra -Wnon-virtual-dtor -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wrestrict")
