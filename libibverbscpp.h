@@ -100,7 +100,7 @@ namespace ibv {
         const Gid &getDgid() const;
     };
 
-    static_assert(sizeof(GlobalRoutingHeader) == sizeof(ibv_grh));
+static_assert(sizeof(GlobalRoutingHeader) == sizeof(ibv_grh), "");
 
     class GlobalRoute : public ibv_global_route {
         using ibv_global_route::dgid;
@@ -130,7 +130,7 @@ namespace ibv {
         uint8_t getTrafficClass() const;
     };
 
-    static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route));
+static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
 
     namespace flow {
         enum class Flags : std::underlying_type_t<ibv_flow_flags> {
@@ -182,11 +182,11 @@ namespace ibv {
     } // namespace flow
 
     namespace context {
-        struct Context;
+    class Context;
     } // namespace context
 
     namespace protectiondomain {
-        struct ProtectionDomain;
+    class ProtectionDomain;
     } // namespace protectiondomain
 
     namespace workcompletion {
@@ -302,7 +302,7 @@ namespace ibv {
             constexpr static void checkCondition(bool condition);
         };
 
-        static_assert(sizeof(WorkCompletion) == sizeof(ibv_wc));
+    static_assert(sizeof(WorkCompletion) == sizeof(ibv_wc), "");
 
         [[nodiscard]]
         inline std::string to_string(Opcode opcode);
@@ -371,7 +371,7 @@ namespace ibv {
             constexpr void setPortNum(uint8_t port_num);
         };
 
-        static_assert(sizeof(Attributes) == sizeof(ibv_ah_attr));
+    static_assert(sizeof(Attributes) == sizeof(ibv_ah_attr), "");
 
         class AddressHandle : public ibv_ah, public internal::PointerOnly {
             using ibv_ah::context;
@@ -383,7 +383,7 @@ namespace ibv {
             static void operator delete(void *ptr) noexcept;
         };
 
-        static_assert(sizeof(AddressHandle) == sizeof(ibv_ah));
+    static_assert(sizeof(AddressHandle) == sizeof(ibv_ah), "");
     } // namespace ah
 
     namespace completions {
@@ -418,7 +418,7 @@ namespace ibv {
             void requestNotify(bool solicitedOnly);
         };
 
-        static_assert(sizeof(CompletionQueue) == sizeof(ibv_cq));
+    static_assert(sizeof(CompletionQueue) == sizeof(ibv_cq), "");
 
         class CompletionEventChannel : public ibv_comp_channel, public internal::PointerOnly {
             using ibv_comp_channel::context;
@@ -435,7 +435,7 @@ namespace ibv {
             std::tuple<CompletionQueue *, void *> getEvent();
         };
 
-        static_assert(sizeof(CompletionEventChannel) == sizeof(ibv_comp_channel));
+    static_assert(sizeof(CompletionEventChannel) == sizeof(ibv_comp_channel), "");
     } // namespace completions
 
     enum class Mtu : std::underlying_type_t<ibv_mtu> {
@@ -589,7 +589,7 @@ namespace ibv {
             constexpr uint8_t getLinkLayer() const;
         };
 
-        static_assert(sizeof(Attributes) == sizeof(ibv_port_attr));
+    static_assert(sizeof(Attributes) == sizeof(ibv_port_attr), "");
     } // namespace port
 
     namespace device {
@@ -829,7 +829,7 @@ namespace ibv {
             constexpr uint8_t getPhysPortCnt() const;
         };
 
-        static_assert(sizeof(Attributes) == sizeof(ibv_device_attr));
+    static_assert(sizeof(Attributes) == sizeof(ibv_device_attr), "");
 
         class Device : public ibv_device, public internal::PointerOnly {
             using ibv_device::_ops;
@@ -853,7 +853,7 @@ namespace ibv {
             std::unique_ptr<context::Context> open();
         };
 
-        static_assert(sizeof(Device) == sizeof(ibv_device));
+    static_assert(sizeof(Device) == sizeof(ibv_device), "");
 
         class DeviceList {
             int num_devices = 0; // needs to be initialized first
@@ -908,6 +908,7 @@ namespace ibv {
         inline std::string to_string(ReregErrorCode ec);
 
         struct Slice : public ibv_sge {
+            Slice() = default;
             Slice(uint64_t addr, uint32_t length, uint32_t lkey) :
                     ibv_sge{addr, length, lkey} {}
         };
@@ -969,7 +970,7 @@ namespace ibv {
                             void *newAddr, size_t newLength, std::initializer_list<AccessFlag> accessFlags);
         };
 
-        static_assert(sizeof(MemoryRegion) == sizeof(ibv_mr));
+    static_assert(sizeof(MemoryRegion) == sizeof(ibv_mr), "");
 
         [[nodiscard]]
         inline std::string to_string(const MemoryRegion &mr);
@@ -1054,7 +1055,7 @@ namespace ibv {
             constexpr decltype(wr) &getWr();
         };
 
-        static_assert(sizeof(SendWr) == sizeof(ibv_send_wr));
+    static_assert(sizeof(SendWr) == sizeof(ibv_send_wr), "");
 
         // internal
         struct Rdma : SendWr {
@@ -1145,14 +1146,14 @@ namespace ibv {
             constexpr void setSge(memoryregion::Slice *scatterGatherArray, int size);
         };
 
-        static_assert(sizeof(Recv) == sizeof(ibv_recv_wr));
+    static_assert(sizeof(Recv) == sizeof(ibv_recv_wr), "");
 
         /// Helper class for simple workrequests, that only use a single Scatter/Gather entry, aka only write to
         /// continuous memory
         template<class SendWorkRequest>
         class Simple : public SendWorkRequest {
             static_assert(std::is_base_of<SendWr, SendWorkRequest>::value or
-                          std::is_base_of<Recv, SendWorkRequest>::value);
+                          std::is_base_of<Recv, SendWorkRequest>::value, "");
 
             memoryregion::Slice slice{};
 
@@ -1193,7 +1194,7 @@ namespace ibv {
             constexpr void setMwAccessFlags(std::initializer_list<AccessFlag> accessFlags);
         };
 
-        static_assert(sizeof(BindInfo) == sizeof(ibv_mw_bind_info));
+    static_assert(sizeof(BindInfo) == sizeof(ibv_mw_bind_info), "");
 
         class Bind : public ibv_mw_bind {
             using ibv_mw_bind::wr_id;
@@ -1211,7 +1212,7 @@ namespace ibv {
             BindInfo &getBindInfo();
         };
 
-        static_assert(sizeof(Bind) == sizeof(ibv_mw_bind));
+    static_assert(sizeof(Bind) == sizeof(ibv_mw_bind), "");
 
         class MemoryWindow : public ibv_mw, public internal::PointerOnly {
             using ibv_mw::context;
@@ -1240,7 +1241,7 @@ namespace ibv {
             constexpr Type getType();
         };
 
-        static_assert(sizeof(MemoryWindow) == sizeof(ibv_mw));
+    static_assert(sizeof(MemoryWindow) == sizeof(ibv_mw), "");
     } // namespace memorywindow
 
     namespace srq {
@@ -1270,7 +1271,7 @@ namespace ibv {
             explicit constexpr Attributes(uint32_t max_wr = 0, uint32_t max_sge = 0, uint32_t srq_limit = 0);
         };
 
-        static_assert(sizeof(Attributes) == sizeof(ibv_srq_attr));
+    static_assert(sizeof(Attributes) == sizeof(ibv_srq_attr), "");
 
         class InitAttributes : public ibv_srq_init_attr {
             using ibv_srq_init_attr::srq_context;
@@ -1279,7 +1280,7 @@ namespace ibv {
             explicit constexpr InitAttributes(Attributes attrs = Attributes(), void *context = nullptr);
         };
 
-        static_assert(sizeof(InitAttributes) == sizeof(ibv_srq_init_attr));
+    static_assert(sizeof(InitAttributes) == sizeof(ibv_srq_init_attr), "");
 
         class SharedReceiveQueue : public ibv_srq, public internal::PointerOnly {
             using ibv_srq::context;
@@ -1313,7 +1314,7 @@ namespace ibv {
             void postRecv(workrequest::Recv &wr, workrequest::Recv *&badWr);
         };
 
-        static_assert(sizeof(SharedReceiveQueue) == sizeof(ibv_srq));
+    static_assert(sizeof(SharedReceiveQueue) == sizeof(ibv_srq), "");
     } // namespace srq
 
     namespace xrcd {
@@ -1341,7 +1342,7 @@ namespace ibv {
             constexpr void setOflags(std::initializer_list<OpenFlags> oflags);
         };
 
-        static_assert(sizeof(InitAttributes) == sizeof(ibv_xrcd_init_attr));
+    static_assert(sizeof(InitAttributes) == sizeof(ibv_xrcd_init_attr), "");
 
         class ExtendedConnectionDomain : public ibv_xrcd, public internal::PointerOnly {
             using ibv_xrcd::context;
@@ -1351,7 +1352,7 @@ namespace ibv {
             static void operator delete(void *ptr) noexcept;
         };
 
-        static_assert(sizeof(ExtendedConnectionDomain) == sizeof(ibv_xrcd));
+    static_assert(sizeof(ExtendedConnectionDomain) == sizeof(ibv_xrcd), "");
     } // namespace xrcd
 
     namespace queuepair {
@@ -1459,7 +1460,7 @@ namespace ibv {
             constexpr uint32_t getMaxInlineData() const;
         };
 
-        static_assert(sizeof(Capabilities) == sizeof(ibv_qp_cap));
+    static_assert(sizeof(Capabilities) == sizeof(ibv_qp_cap), "");
 
         class OpenAttributes : public ibv_qp_open_attr {
             using ibv_qp_open_attr::comp_mask;
@@ -1479,7 +1480,7 @@ namespace ibv {
             constexpr void setQpType(Type qp_type);
         };
 
-        static_assert(sizeof(OpenAttributes) == sizeof(ibv_qp_open_attr));
+    static_assert(sizeof(OpenAttributes) == sizeof(ibv_qp_open_attr), "");
 
         class Attributes : public ibv_qp_attr {
             using ibv_qp_attr::qp_state;
@@ -1690,7 +1691,7 @@ namespace ibv {
              */
         };
 
-        static_assert(sizeof(Attributes) == sizeof(ibv_qp_attr));
+    static_assert(sizeof(Attributes) == sizeof(ibv_qp_attr), "");
 
         class InitAttributes : public ibv_qp_init_attr {
             using ibv_qp_init_attr::qp_context;
@@ -1716,7 +1717,7 @@ namespace ibv {
             constexpr void setSignalAll(bool shouldSignal);
         };
 
-        static_assert(sizeof(InitAttributes) == sizeof(ibv_qp_init_attr));
+    static_assert(sizeof(InitAttributes) == sizeof(ibv_qp_init_attr), "");
 
         class QueuePair : public ibv_qp, public internal::PointerOnly {
             using ibv_qp::context;
@@ -1799,7 +1800,7 @@ namespace ibv {
             void detachFromMcastGroup(const Gid &gid, uint16_t lid);
         };
 
-        static_assert(sizeof(QueuePair) == sizeof(ibv_qp));
+    static_assert(sizeof(QueuePair) == sizeof(ibv_qp), "");
     } // namespace queuepair
 
     namespace event {
@@ -1861,7 +1862,7 @@ namespace ibv {
             constexpr void checkCause(Cause cause) const;
         };
 
-        static_assert(sizeof(AsyncEvent) == sizeof(ibv_async_event));
+    static_assert(sizeof(AsyncEvent) == sizeof(ibv_async_event), "");
     } // namespace event
 
     namespace protectiondomain {
@@ -1904,7 +1905,7 @@ namespace ibv {
                                                   uint8_t port_num);
         };
 
-        static_assert(sizeof(ProtectionDomain) == sizeof(ibv_pd));
+    static_assert(sizeof(ProtectionDomain) == sizeof(ibv_pd), "");
     } // namespace protectiondomain
 
     namespace context {
