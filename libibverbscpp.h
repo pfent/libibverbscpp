@@ -241,7 +241,7 @@ static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
             using ibv_wc::vendor_err;
             using ibv_wc::byte_len;
             using ibv_wc::imm_data;
-            using ibv_wc::invalidated_rkey;
+//            using ibv_wc::invalidated_rkey;
             using ibv_wc::qp_num;
             using ibv_wc::src_qp;
             using ibv_wc::wc_flags;
@@ -832,7 +832,7 @@ static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
     static_assert(sizeof(Attributes) == sizeof(ibv_device_attr), "");
 
         class Device : public ibv_device, public internal::PointerOnly {
-            using ibv_device::_ops;
+//            using ibv_device::_ops;
             using ibv_device::node_type;
             using ibv_device::transport_type;
             using ibv_device::name;
@@ -1008,11 +1008,11 @@ static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
             using ibv_send_wr::opcode;
             using ibv_send_wr::send_flags;
             using ibv_send_wr::imm_data;
-            using ibv_send_wr::invalidate_rkey;
+//            using ibv_send_wr::invalidate_rkey;
             using ibv_send_wr::wr;
             using ibv_send_wr::qp_type;
             using ibv_send_wr::bind_mw;
-            using ibv_send_wr::tso;
+//            using ibv_send_wr::tso;
         public:
             constexpr SendWr();
 
@@ -1508,7 +1508,7 @@ static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
             using ibv_qp_attr::rnr_retry;
             using ibv_qp_attr::alt_port_num;
             using ibv_qp_attr::alt_timeout;
-            using ibv_qp_attr::rate_limit;
+//            using ibv_qp_attr::rate_limit;
         public:
             /// The current QueuePair state
             [[nodiscard]]
