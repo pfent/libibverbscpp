@@ -506,7 +506,6 @@ static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
             using ibv_port_attr::active_speed;
             using ibv_port_attr::phys_state;
             using ibv_port_attr::link_layer;
-            using ibv_port_attr::reserved;
         public:
             /// Logical port state
             [[nodiscard]]
