@@ -1,7 +1,7 @@
 #ifndef LIBRDMACMCPP_LIBRARY_H
 #define LIBRDMACMCPP_LIBRARY_H
 
-#include <libibverbscpp.h>
+#include "libibverbscpp.h"
 #include <rdma/rdma_cma.h>
 
 namespace rdma {
