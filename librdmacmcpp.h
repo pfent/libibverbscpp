@@ -41,6 +41,17 @@ namespace rdma {
         static void operator delete(void *ptr) noexcept;
 
         constexpr void setContext(void *context);
+
+        void bindAddr(sockaddr *addr);
+        void resolveAddr(sockaddr *src, sockaddr *dst, int timeout_ms);
+        void resolveRoute(int timeout_ms);
+        void createQP(ibv::protectiondomain::ProtectionDomain& pd, ibv::queuepair::InitAttributes& init_attr);
+        void destroyQP();
+        void connect(rdma_conn_param* param);
+        void listen(int backlog);
+        void accept(rdma_conn_param* param);
+        void reject(void *private_data, uint8_t private_data_len);
+        void disconnect();
     };
 
     static_assert(sizeof(ID) == sizeof(rdma_cm_id), "");
@@ -154,6 +165,65 @@ inline void rdma::event::Channel::operator delete(void *ptr) noexcept {
 
 constexpr void rdma::ID::setContext(void *context) {
     this->context = context;
+}
+
+inline void rdma::ID::bindAddr(sockaddr *addr)
+{
+    int ret = rdma_bind_addr(this, addr);
+    internal::checkStatus("rdma_bind_addr", ret);
+}
+
+inline void rdma::ID::resolveAddr(sockaddr *src, sockaddr *dst, int timeout_ms)
+{
+    int ret = rdma_resolve_addr(this, src, dst, timeout_ms);
+    internal::checkStatus("rdma_resolve_addr", ret);
+}
+
+inline void rdma::ID::resolveRoute(int timeout_ms)
+{
+    int ret = rdma_resolve_route(this, timeout_ms);
+    internal::checkStatus("rdma_resolve_route", ret);
+}
+
+inline void rdma::ID::createQP(ibv::protectiondomain::ProtectionDomain& pd, ibv::queuepair::InitAttributes& init_attr)
+{
+    int ret = rdma_create_qp(this, &pd, &init_attr);
+    internal::checkStatus("rdma_create_qp", ret);
+}
+
+inline void rdma::ID::destroyQP()
+{
+    rdma_destroy_qp(this);
+}
+
+inline void rdma::ID::connect(rdma_conn_param* param)
+{
+    int ret = rdma_connect(this, param);
+    internal::checkStatus("rdma_connect", ret);
+}
+
+inline void rdma::ID::listen(int backlog)
+{
+    int ret = rdma_listen(this, backlog);
+    internal::checkStatus("rdma_listen", ret);
+}
+
+inline void rdma::ID::accept(rdma_conn_param* param)
+{
+    int ret = rdma_accept(this, param);
+    internal::checkStatus("rdma_accept", ret);
+}
+
+inline void rdma::ID::reject(void *private_data, uint8_t private_data_len)
+{
+    int ret = rdma_reject(this, private_data, private_data_len);
+    internal::checkStatus("rdma_reject", ret);
+}
+
+inline void rdma::ID::disconnect()
+{
+    int ret = rdma_disconnect(this);
+    internal::checkStatus("rdma_disconnect", ret);
 }
 
 inline void rdma::ID::operator delete(void *ptr) noexcept {
