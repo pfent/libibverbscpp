@@ -3,6 +3,7 @@
 
 #include "libibverbscpp.h"
 #include <rdma/rdma_cma.h>
+#include <boost/operators.hpp>
 
 namespace rdma {
     namespace internal {
@@ -129,6 +130,61 @@ namespace rdma {
     }
 
     std::unique_ptr<event::Channel> createEventChannel();
+
+    namespace addrinfo {
+        class const_iterator : public boost::forward_iteratable<const_iterator, const rdma_addrinfo*> {
+        public:
+            const_iterator(const rdma_addrinfo *p) : p(p) {}
+
+            const rdma_addrinfo& operator *() const { return *p; }
+
+            const_iterator& operator++()
+            {
+                p = p->ai_next;
+                return *this;
+            }
+
+            bool operator==(const const_iterator& o) const { return o.p == p; }
+
+        private:
+            const rdma_addrinfo* p;
+        };
+
+        class AddrInfo : public rdma_addrinfo, public internal::PointerOnly {
+            using rdma_addrinfo::ai_flags;
+            using rdma_addrinfo::ai_family;
+            using rdma_addrinfo::ai_qp_type;
+            using rdma_addrinfo::ai_port_space;
+            using rdma_addrinfo::ai_src_len;
+            using rdma_addrinfo::ai_dst_len;
+            using rdma_addrinfo::ai_src_addr;
+            using rdma_addrinfo::ai_dst_addr;
+            using rdma_addrinfo::ai_src_canonname;
+            using rdma_addrinfo::ai_dst_canonname;
+            using rdma_addrinfo::ai_route_len;
+            using rdma_addrinfo::ai_route;
+            using rdma_addrinfo::ai_connect_len;
+            using rdma_addrinfo::ai_connect;
+            using rdma_addrinfo::ai_next;
+
+            friend class const_iterator;
+        public:
+            static void *operator new(std::size_t) noexcept = delete;
+
+            static void operator delete(void *ptr) noexcept;
+
+            [[nodiscard]]
+            const_iterator begin() const;
+
+            [[nodiscard]]
+            const_iterator end() const;
+        };
+
+        static_assert(sizeof(AddrInfo) == sizeof(rdma_addrinfo), "");
+
+        std::unique_ptr<AddrInfo> get(const char *node, const char *service,
+                                      const rdma_addrinfo *hints);
+    }
 
 /**********************************************************************************************************************/
 } // namespace rdma
@@ -268,6 +324,31 @@ inline const rdma_conn_param& rdma::event::Event::getConnParam() const
 inline const rdma_ud_param& rdma::event::Event::getUDParam() const
 {
     return param.ud;
+}
+
+inline void rdma::addrinfo::AddrInfo::operator delete(void *ptr) noexcept
+{
+    rdma_freeaddrinfo(reinterpret_cast<rdma_addrinfo *>(ptr));
+}
+
+inline rdma::addrinfo::const_iterator rdma::addrinfo::AddrInfo::begin() const
+{
+    return const_iterator{this};
+}
+
+inline rdma::addrinfo::const_iterator rdma::addrinfo::AddrInfo::end() const
+{
+    return const_iterator{nullptr};
+}
+
+inline std::unique_ptr<rdma::addrinfo::AddrInfo> rdma::addrinfo::get(
+    const char *node, const char *service, const rdma_addrinfo *hints)
+{
+    using AI = rdma::addrinfo::AddrInfo;
+    rdma_addrinfo *addrinfo;
+    int ret = rdma_getaddrinfo(node, service, hints, &addrinfo);
+    internal::checkStatus("rdma_getaddrinfo", ret);
+    return std::unique_ptr<AI>(reinterpret_cast<AI *>(addrinfo));
 }
 
 #endif
