@@ -1,11 +1,11 @@
 # libibverbscpp - Modern C++ bindings for libibverbs
 
-> libibverbs is a library that allows userspace processes to use InfiniBand/RDMA "verbs" directly.
+> `libibverbs` is a library that allows userspace processes to use InfiniBand/RDMA "verbs" directly.
 
-However, libibverbs only has C bindings, with little type-safety and a bug-prone manual deallocation mechanisms.
+However, libibverbs only has C bindings, with little type-safety and a bug-prone manual deallocation mechanism.
  
-As libibverbs already uses some object-oriented approaches, so a C++ wrapper providing strong types and RAII mechanisms
-for resource management.  
+As `libibverbs` already uses some object-oriented approaches, the C++ wrapper can provide stronger types and RAII mechanisms
+for resource management.
 
 ### Building
 You'll probably need a reasonably modern compiler for this with basic C++14 support. 
