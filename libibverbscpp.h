@@ -105,17 +105,32 @@ class GlobalRoute : public ibv_global_route {
     /// Destination GID or MGID
     [[nodiscard]] const Gid &getDgid() const;
 
+    /// Destination GID or MGID
+    void setDgid(const Gid &dGid);
+
     /// Flow label
-    [[nodiscard]] uint32_t getFlowLabel() const;
+    [[nodiscard]] constexpr uint32_t getFlowLabel() const;
+
+    /// Flow label
+    constexpr void setFlowLabel(uint32_t flowLabel);
 
     /// Source GID index
-    [[nodiscard]] uint8_t getSgidIndex() const;
+    [[nodiscard]] constexpr uint8_t getSgidIndex() const;
+
+    /// Source GID index
+    constexpr void getSgidIndex(uint8_t sgidIndex);
 
     /// Hop limit
-    [[nodiscard]] uint8_t getHopLimit() const;
+    [[nodiscard]] constexpr uint8_t getHopLimit() const;
+
+    /// Hop limit
+    constexpr void setHopLimit(uint8_t hopLimit);
 
     /// Traffic class
-    [[nodiscard]] uint8_t getTrafficClass() const;
+    [[nodiscard]] constexpr uint8_t getTrafficClass() const;
+
+    /// Traffic class
+    constexpr void setTrafficClass(uint8_t trafficClass);
 };
 
 static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
@@ -1533,16 +1548,16 @@ class Attributes : public ibv_qp_attr {
     constexpr void setAltTimeout(uint8_t alt_timeout);
 
     /* Only available in newer versions of verbs.h
-            /// Rate limit in kbps for packet pacing
-            constexpr uint32_t getRateLimit() const {
-                return rate_limit;
-            }
+    /// Rate limit in kbps for packet pacing
+    constexpr uint32_t getRateLimit() const {
+        return rate_limit;
+    }
 
-            /// Rate limit in kbps for packet pacing
-            constexpr void setRateLimit(uint32_t rateLimit) {
-                rate_limit = rateLimit;
-            }
-             */
+    /// Rate limit in kbps for packet pacing
+    constexpr void setRateLimit(uint32_t rateLimit) {
+        rate_limit = rateLimit;
+    }
+     */
 };
 
 static_assert(sizeof(Attributes) == sizeof(ibv_qp_attr), "");
@@ -1896,20 +1911,40 @@ inline const ibv::Gid &ibv::GlobalRoute::getDgid() const {
     return *reinterpret_cast<const Gid *>(&dgid);
 }
 
-inline uint32_t ibv::GlobalRoute::getFlowLabel() const {
+constexpr uint32_t ibv::GlobalRoute::getFlowLabel() const {
     return flow_label;
 }
 
-inline uint8_t ibv::GlobalRoute::getSgidIndex() const {
+constexpr uint8_t ibv::GlobalRoute::getSgidIndex() const {
     return sgid_index;
 }
 
-inline uint8_t ibv::GlobalRoute::getHopLimit() const {
+constexpr uint8_t ibv::GlobalRoute::getHopLimit() const {
     return hop_limit;
 }
 
-inline uint8_t ibv::GlobalRoute::getTrafficClass() const {
+constexpr uint8_t ibv::GlobalRoute::getTrafficClass() const {
     return traffic_class;
+}
+
+inline void ibv::GlobalRoute::setDgid(const Gid &gid) {
+    dgid = *reinterpret_cast<const ibv_gid *>(&gid);
+}
+
+constexpr void ibv::GlobalRoute::setFlowLabel(uint32_t flowLabel) {
+    flow_label = flowLabel;
+}
+
+constexpr void ibv::GlobalRoute::getSgidIndex(uint8_t sgidIndex) {
+    sgid_index = sgidIndex;
+}
+
+constexpr void ibv::GlobalRoute::setHopLimit(uint8_t hopLimit) {
+    hop_limit = hopLimit;
+}
+
+constexpr void ibv::GlobalRoute::setTrafficClass(uint8_t trafficClass) {
+    traffic_class = trafficClass;
 }
 
 constexpr ibv::flow::SpecType ibv::flow::Spec::getType() const {
