@@ -1329,12 +1329,12 @@ enum class MigrationState : std::underlying_type_t<ibv_mig_state> {
 
 [[nodiscard]] inline std::string to_string(MigrationState ms);
 
-class Capabilities : public ibv_qp_cap { // TODO
-    //using ibv_qp_cap::max_send_wr;
-    //using ibv_qp_cap::max_recv_wr;
-    //using ibv_qp_cap::max_send_sge;
-    //using ibv_qp_cap::max_recv_sge;
-    //using ibv_qp_cap::max_inline_data;
+class Capabilities : public ibv_qp_cap {
+    using ibv_qp_cap::max_send_wr;
+    using ibv_qp_cap::max_recv_wr;
+    using ibv_qp_cap::max_send_sge;
+    using ibv_qp_cap::max_recv_sge;
+    using ibv_qp_cap::max_inline_data;
     public:
     /// Max number of outstanding workrequests in the sendqueue
     [[nodiscard]] constexpr uint32_t getMaxSendWr() const;
@@ -1350,6 +1350,13 @@ class Capabilities : public ibv_qp_cap { // TODO
 
     /// Maximum size of workrequests which can be posted inline in the sendqueue with Flags::INLINE in bytes
     [[nodiscard]] constexpr uint32_t getMaxInlineData() const;
+
+    constexpr void setMaxSendWr(uint32_t max_send_wr);
+
+    constexpr void setMaxRecvWr(uint32_t max_recv_wr);
+    constexpr void setMaxSendSge(uint32_t max_send_sge);
+    constexpr void setMaxRecvSge(uint32_t max_recv_sge);
+    constexpr void setMaxInlineData(uint32_t max_inline_data);
 };
 
 static_assert(sizeof(Capabilities) == sizeof(ibv_qp_cap), "");
@@ -2916,6 +2923,22 @@ constexpr uint32_t ibv::queuepair::Capabilities::getMaxRecvSge() const {
 
 constexpr uint32_t ibv::queuepair::Capabilities::getMaxInlineData() const {
     return max_inline_data;
+}
+constexpr void ibv::queuepair::Capabilities::setMaxSendWr(uint32_t max_send_wr) {
+    this->max_send_wr = max_send_wr;
+}
+
+constexpr void ibv::queuepair::Capabilities::setMaxRecvWr(uint32_t max_recv_wr){
+    this->max_recv_wr = max_recv_wr;
+}
+constexpr void ibv::queuepair::Capabilities::setMaxSendSge(uint32_t max_send_sge){
+    this->max_send_sge = max_send_sge;
+}
+constexpr void ibv::queuepair::Capabilities::setMaxRecvSge(uint32_t max_recv_sge){
+    this->max_recv_sge = max_recv_sge;
+}
+constexpr void ibv::queuepair::Capabilities::setMaxInlineData(uint32_t max_inline_data){
+    this->max_inline_data = max_inline_data;
 }
 
 constexpr void ibv::queuepair::OpenAttributes::setCompMask(std::initializer_list<ibv::queuepair::OpenAttrMask> masks) {
