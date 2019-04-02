@@ -36,6 +36,7 @@ ibv::workrequest::SendWr *bad;
 qp->postSend(wr, bad);
 // no explicit teardown needed
 ```
+A working example is in the `example` directory.
 
 ### Resource management
 All allocations return a `std::unique_ptr<T>`, which automatically handles exception-safe teardown. In error cases, an
