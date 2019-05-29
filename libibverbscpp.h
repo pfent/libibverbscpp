@@ -218,15 +218,25 @@ enum class Status : std::underlying_type_t<ibv_wc_status> {
     GENERAL_ERR = IBV_WC_GENERAL_ERR
 };
 
+/// Opcode for work completions
 enum class Opcode : std::underlying_type_t<ibv_wc_opcode> {
+    /// Either workrequest::Send or workrequest::SendWithImm
     SEND = IBV_WC_SEND,
+    /// Either workrequest::Write or workrequest::WriteWithImm
     RDMA_WRITE = IBV_WC_RDMA_WRITE,
+    /// workrequest::Read
     RDMA_READ = IBV_WC_RDMA_READ,
+    /// workrequest::AtomicCompareSwap
     COMP_SWAP = IBV_WC_COMP_SWAP,
+    /// workrequest::AtomicFetchAdd
     FETCH_ADD = IBV_WC_FETCH_ADD,
+    /// Currently not supported. Should match IBV_WR_BIND_MW
     BIND_MW = IBV_WC_BIND_MW,
+    /// Currently not supported. Should match IBV_WR_LOCAL_INV
     LOCAL_INV = IBV_WC_LOCAL_INV,
+    /// workrequest::Recv
     RECV = IBV_WC_RECV,
+    /// workrequest::Recv, but additionally has immediate data
     RECV_RDMA_WITH_IMM = IBV_WC_RECV_RDMA_WITH_IMM
 };
 
