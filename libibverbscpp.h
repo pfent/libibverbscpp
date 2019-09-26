@@ -1278,7 +1278,6 @@ enum class InitAttrMask : std::underlying_type_t<ibv_qp_init_attr_mask> {
     PD = IBV_QP_INIT_ATTR_PD,
     XRCD = IBV_QP_INIT_ATTR_XRCD,
     CREATE_FLAGS = IBV_QP_INIT_ATTR_CREATE_FLAGS,
-    RESERVED = IBV_QP_INIT_ATTR_RESERVED
 };
 
 enum class CreateFlags : std::underlying_type_t<ibv_qp_create_flags> {
