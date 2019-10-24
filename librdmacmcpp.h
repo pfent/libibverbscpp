@@ -4,6 +4,7 @@
 #include "libibverbscpp.h"
 #include <rdma/rdma_cma.h>
 #include <boost/operators.hpp>
+#include <boost/optional.hpp>
 
 namespace rdma {
     namespace internal {
@@ -42,6 +43,8 @@ namespace rdma {
         static void operator delete(void *ptr) noexcept;
 
         constexpr void setContext(void *context);
+	ibv::queuepair::QueuePair* getQP();
+	ibv::protectiondomain::ProtectionDomain* getPD();
 
         void bindAddr(sockaddr *addr);
         void resolveAddr(sockaddr *src, sockaddr *dst, int timeout_ms);
@@ -53,6 +56,7 @@ namespace rdma {
         void accept(rdma_conn_param* param);
         void reject(void *private_data, uint8_t private_data_len);
         void disconnect();
+	std::unique_ptr<ID> getRequest();
     };
 
     static_assert(sizeof(ID) == sizeof(rdma_cm_id), "");
@@ -186,6 +190,9 @@ namespace rdma {
                                       const rdma_addrinfo *hints);
     }
 
+    std::unique_ptr<ID> createEP(std::unique_ptr<addrinfo::AddrInfo>& res,
+	    boost::optional<ibv::protectiondomain::ProtectionDomain&> pd,
+	    boost::optional<ibv::queuepair::InitAttributes> qp_init_attr);
 /**********************************************************************************************************************/
 } // namespace rdma
 
@@ -221,6 +228,16 @@ inline void rdma::event::Channel::operator delete(void *ptr) noexcept {
 
 constexpr void rdma::ID::setContext(void *context) {
     this->context = context;
+}
+
+ibv::queuepair::QueuePair* rdma::ID::getQP()
+{
+    return reinterpret_cast<ibv::queuepair::QueuePair *>(qp);
+}
+
+ibv::protectiondomain::ProtectionDomain* rdma::ID::getPD()
+{
+    return reinterpret_cast<ibv::protectiondomain::ProtectionDomain *>(pd);
 }
 
 inline void rdma::ID::bindAddr(sockaddr *addr)
@@ -280,6 +297,14 @@ inline void rdma::ID::disconnect()
 {
     int ret = rdma_disconnect(this);
     internal::checkStatus("rdma_disconnect", ret);
+}
+
+inline std::unique_ptr<rdma::ID> rdma::ID::getRequest()
+{
+    struct rdma_cm_id *id;
+    int ret = rdma_get_request(this, &id);
+    internal::checkStatus("rdma_get_request", ret);
+    return std::unique_ptr<ID>(reinterpret_cast<ID *>(id));
 }
 
 inline void rdma::ID::operator delete(void *ptr) noexcept {
@@ -349,6 +374,17 @@ inline std::unique_ptr<rdma::addrinfo::AddrInfo> rdma::addrinfo::get(
     int ret = rdma_getaddrinfo(node, service, hints, &addrinfo);
     internal::checkStatus("rdma_getaddrinfo", ret);
     return std::unique_ptr<AI>(reinterpret_cast<AI *>(addrinfo));
+}
+
+inline std::unique_ptr<rdma::ID>
+rdma::createEP(std::unique_ptr<rdma::addrinfo::AddrInfo>& res, boost::optional<ibv::protectiondomain::ProtectionDomain&> pd,
+               boost::optional<ibv::queuepair::InitAttributes> qp_init_attr)
+{
+    rdma_cm_id *id;
+    int ret = rdma_create_ep(&id, res.get(), pd.get_ptr(),
+                             qp_init_attr.get_ptr());
+    internal::checkStatus("rdma_create_ep", ret);
+    return std::unique_ptr<ID>(reinterpret_cast<ID *>(id));
 }
 
 #endif
