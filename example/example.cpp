@@ -15,11 +15,11 @@ QpInitAttr setupQpInitAttr(ibv::completions::CompletionQueue &sendCompletionQueu
     //queuePairAttributes.setSharedReceiveQueue(receiveQueue); // not needed
     // Capabilities can be queried with ctx->queryAttributes()
     init.capabilities = std::make_unique<ibv::queuepair::Capabilities>();
-    init.capabilities->max_send_wr = 16351;
-    init.capabilities->max_recv_wr = 16351;
-    init.capabilities->max_send_sge = 1;
-    init.capabilities->max_recv_sge = 1;
-    init.capabilities->max_inline_data = 512;
+    init.capabilities->setMaxSendWr(16351);
+    init.capabilities->setMaxRecvWr(16351);
+    init.capabilities->setMaxSendSge(1);
+    init.capabilities->setMaxRecvSge(1);
+    init.capabilities->setMaxInlineData(512);
     init.queuePairAttributes->setCapabilities(*init.capabilities);
     init.queuePairAttributes->setType(ibv::queuepair::Type::RC);
     init.queuePairAttributes->setSignalAll(true);
