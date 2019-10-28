@@ -1596,6 +1596,7 @@ class InitAttributes : public ibv_qp_init_attr {
 
     constexpr void setSharedReceiveQueue(srq::SharedReceiveQueue &sharedReceiveQueue);
 
+    constexpr const Capabilities& getCapabilities() const;
     constexpr void setCapabilities(const Capabilities &caps);
 
     constexpr void setType(Type type);
@@ -1680,6 +1681,9 @@ class QueuePair : public ibv_qp, public internal::PointerOnly {
     void attachToMcastGroup(const Gid &gid, uint16_t lid);
 
     void detachFromMcastGroup(const Gid &gid, uint16_t lid);
+
+    ibv::completions::CompletionQueue *getRecvCQ();
+    ibv::completions::CompletionQueue *getSendCQ();
 };
 
 static_assert(sizeof(QueuePair) == sizeof(ibv_qp), "");
@@ -3187,6 +3191,10 @@ constexpr void ibv::queuepair::InitAttributes::setSharedReceiveQueue(ibv::srq::S
     srq = &sharedReceiveQueue;
 }
 
+constexpr const ibv::queuepair::Capabilities& ibv::queuepair::InitAttributes::getCapabilities() const {
+    return reinterpret_cast<const Capabilities&>(cap);
+}
+
 constexpr void ibv::queuepair::InitAttributes::setCapabilities(const ibv::queuepair::Capabilities &caps) {
     cap = caps;
 }
@@ -3287,6 +3295,14 @@ inline void ibv::queuepair::QueuePair::attachToMcastGroup(const ibv::Gid &gid, u
 inline void ibv::queuepair::QueuePair::detachFromMcastGroup(const ibv::Gid &gid, uint16_t lid) {
     const auto status = ibv_detach_mcast(this, &gid.underlying, lid);
     internal::checkStatus("ibv_detach_mcast", status);
+}
+
+inline ibv::completions::CompletionQueue *ibv::queuepair::QueuePair::getRecvCQ() {
+    return reinterpret_cast<ibv::completions::CompletionQueue *>(recv_cq);
+}
+
+inline ibv::completions::CompletionQueue *ibv::queuepair::QueuePair::getSendCQ() {
+    return reinterpret_cast<ibv::completions::CompletionQueue *>(send_cq);
 }
 
 constexpr ibv::event::Type ibv::event::AsyncEvent::getType() const {

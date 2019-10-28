@@ -10,3 +10,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic ${WARNINGS}")
 add_executable(example example.cpp)
 target_include_directories(example SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
 target_link_libraries(example ibverbs)
+
+add_executable(rdmacm_client rdmacm_client.cpp)
+target_include_directories(rdmacm_client SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_link_libraries(rdmacm_client ibverbs rdmacm)
+
+add_executable(rdmacm_server rdmacm_server.cpp)
+target_include_directories(rdmacm_server SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_link_libraries(rdmacm_server ibverbs rdmacm)
