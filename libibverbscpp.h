@@ -137,7 +137,6 @@ static_assert(sizeof(GlobalRoute) == sizeof(ibv_global_route), "");
 
 namespace flow {
 enum class Flags : std::underlying_type_t<ibv_flow_flags> {
-    ALLOW_LOOP_BACK = IBV_FLOW_ATTR_FLAGS_ALLOW_LOOP_BACK,
     DONT_TRAP = IBV_FLOW_ATTR_FLAGS_DONT_TRAP
 };
 
